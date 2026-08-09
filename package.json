@@ -2,7 +2,7 @@
   "name": "pyotobaslat",
   "displayName": "PyOtoBaşlat - Türkçe Python Sihirbazı",
   "description": "Python projelerini tek tuşla kurar, venv oluşturur, hataları Türkçeleştirir, otomatik düzeltir, görsel performans analizi yapar, .env sihirbazı sunar ve güvenlik taraması yapar.",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "publisher": "Lionapp1",
   "license": "MIT",
   "icon": "icon.png",
@@ -10,44 +10,133 @@
     "type": "git",
     "url": "https://github.com/Lionapp1/pyotobaslat"
   },
-  "engines": { "vscode": "^1.85.0" },
-  "categories": ["Programming Languages", "Other"],
-  "activationEvents": ["onLanguage:python"],
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:python"
+  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
-      { "command": "pyotobaslat.hazirlaVeCalistir", "title": "🐍 PyOtoBaşlat: Projeyi Hazırla ve Çalıştır", "icon": "$(play)" },
-      { "command": "pyotobaslat.performansAnalizi", "title": "⚡ PyOtoBaşlat: Görsel Performans Analizi", "icon": "$(graph)" },
-      { "command": "pyotobaslat.paketleriGuncelle", "title": "📦 PyOtoBaşlat: Eksik Paketleri Kur", "icon": "$(cloud-download)" },
-      { "command": "pyotobaslat.guvenlikTaramasi", "title": "🔒 PyOtoBaşlat: Güvenlik Açığı Tara", "icon": "$(shield)" },
-      { "command": "pyotobaslat.ayarlarAc", "title": "⚙️ PyOtoBaşlat: Ayarları Aç", "icon": "$(gear)" }
+      {
+        "command": "pyotobaslat.hazirlaVeCalistir",
+        "title": "🐍 PyOtoBaşlat: Projeyi Hazırla ve Çalıştır",
+        "icon": "$(play)"
+      },
+      {
+        "command": "pyotobaslat.performansAnalizi",
+        "title": "⚡ PyOtoBaşlat: Görsel Performans Analizi",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "pyotobaslat.paketleriGuncelle",
+        "title": "📦 PyOtoBaşlat: Eksik Paketleri Kur",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "pyotobaslat.guvenlikTaramasi",
+        "title": "🔒 PyOtoBaşlat: Güvenlik Açığı Tara",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "pyotobaslat.ayarlarAc",
+        "title": "⚙️ PyOtoBaşlat: Ayarları Aç",
+        "icon": "$(gear)"
+      }
     ],
     "menus": {
       "editor/title": [
-        { "command": "pyotobaslat.hazirlaVeCalistir", "group": "navigation", "when": "editorLangId == python" },
-        { "command": "pyotobaslat.guvenlikTaramasi", "group": "navigation@2", "when": "editorLangId == python" }
+        {
+          "command": "pyotobaslat.hazirlaVeCalistir",
+          "group": "navigation",
+          "when": "editorLangId == python"
+        },
+        {
+          "command": "pyotobaslat.guvenlikTaramasi",
+          "group": "navigation@2",
+          "when": "editorLangId == python"
+        }
       ]
     },
     "keybindings": [
-      { "command": "pyotobaslat.hazirlaVeCalistir", "key": "f5", "when": "editorLangId == python" },
-      { "command": "pyotobaslat.performansAnalizi", "key": "ctrl+shift+f5", "when": "editorLangId == python" },
-      { "command": "pyotobaslat.guvenlikTaramasi", "key": "ctrl+shift+s", "when": "editorLangId == python" }
+      {
+        "command": "pyotobaslat.hazirlaVeCalistir",
+        "key": "f5",
+        "when": "editorLangId == python"
+      },
+      {
+        "command": "pyotobaslat.performansAnalizi",
+        "key": "ctrl+shift+f5",
+        "when": "editorLangId == python"
+      },
+      {
+        "command": "pyotobaslat.guvenlikTaramasi",
+        "key": "ctrl+shift+s",
+        "when": "editorLangId == python"
+      }
     ],
     "configuration": {
       "title": "🐍 PyOtoBaşlat Ayarları",
       "properties": {
-        "pyotobaslat.otomatikKurulum": { "type": "boolean", "default": true, "description": "requirements.txt varsa otomatik kurar." },
-        "pyotobaslat.venvOtomatikOlustur": { "type": "boolean", "default": true, "description": ".venv yoksa otomatik oluşturur." },
-        "pyotobaslat.hataCevirmeniAktif": { "type": "boolean", "default": true, "description": "Hataları Türkçeleştirir ve otomatik düzeltir." },
-        "pyotobaslat.calistirmaModu": { "type": "string", "enum": ["otomatik","django","flask","fastapi","script"], "default": "otomatik", "description": "Çalıştırma modu." },
-        "pyotobaslat.otomatikPaketKontrol": { "type": "boolean", "default": true, "description": "Derin tarama ile eksik modülleri bulur." },
-        "pyotobaslat.envSihirbaziAktif": { "type": "boolean", "default": true, "description": ".env şablonu oluşturur." },
-        "pyotobaslat.selfHealingAktif": { "type": "boolean", "default": true, "description": "Build/pip hatalarını otomatik düzeltir." }
+        "pyotobaslat.otomatikKurulum": {
+          "type": "boolean",
+          "default": true,
+          "description": "requirements.txt varsa otomatik kurar."
+        },
+        "pyotobaslat.venvOtomatikOlustur": {
+          "type": "boolean",
+          "default": true,
+          "description": ".venv yoksa otomatik oluşturur."
+        },
+        "pyotobaslat.hataCevirmeniAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": "Hataları Türkçeleştirir ve otomatik düzeltir."
+        },
+        "pyotobaslat.calistirmaModu": {
+          "type": "string",
+          "enum": [
+            "otomatik",
+            "django",
+            "flask",
+            "fastapi",
+            "script"
+          ],
+          "default": "otomatik",
+          "description": "Çalıştırma modu."
+        },
+        "pyotobaslat.otomatikPaketKontrol": {
+          "type": "boolean",
+          "default": true,
+          "description": "Derin tarama ile eksik modülleri bulur."
+        },
+        "pyotobaslat.envSihirbaziAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": ".env şablonu oluşturur."
+        },
+        "pyotobaslat.selfHealingAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": "Build/pip hatalarını otomatik düzeltir."
+        }
       }
     }
   },
-  "scripts": { "compile": "tsc -p ./", "watch": "tsc -watch -p ./" },
-  "files": ["out/**", "package.json", "icon.png"],
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "files": [
+    "out/**",
+    "package.json",
+    "icon.png"
+  ],
   "devDependencies": {
     "@types/vscode": "^1.85.0",
     "@types/node": "^20.0.0",
