@@ -1,0 +1,45 @@
+name: CI - Derle & Paketle
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 📥 Repo'yu klonla
+        uses: actions/checkout@v4
+
+      - name: 🟢 Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: 📦 Bağımlılıkları kur
+        run: npm ci
+
+      - name: 🔨 Derle
+        run: npm run compile
+
+      - name: 📋 Derleme çıktısını kontrol et
+        run: |
+          if [ ! -f out/extension.js ]; then
+            echo "❌ out/extension.js bulunamadı! Derleme başarısız."
+            exit 1
+          fi
+          echo "✅ Derleme başarılı"
+
+      - name: 📦 VSIX paketini oluştur
+        run: npx @vscode/vsce package --allow-missing-repository
+
+      - name: 📤 VSIX artifact olarak yükle
+        uses: actions/upload-artifact@v4
+        with:
+          name: pyotobaslat-vsix
+          path: "*.vsix"
+          retention-days: 7
