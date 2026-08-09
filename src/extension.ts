@@ -8,32 +8,32 @@ interface HataCozum {
     aciklama: string;
     cozum: string;
     komut?: string;
-    healingType?: 'pip_upgrade' | 'venv_recreate' | 'build_deps' | 'cache_clear';
+    healingType?: 'pip_install' | 'pip_upgrade' | 'venv_recreate' | 'build_deps' | 'cache_clear';
 }
 
 const HATA_SOZLUGU: Record<string, HataCozum> = {
-    "ModuleNotFoundError": { aciklama: "📦 Eksik Paket: Modül yüklü değil.", cozum: "Paketi otomatik kuruyorum...", komut: "pip install {paket}", healingType: 'pip_upgrade' },
-    "ImportError": { aciklama: "📥 İçe Aktarma Hatası: Modül bozuk.", cozum: "Paketi yeniden kuruyorum...", komut: "pip install --force-reinstall {paket}", healingType: 'pip_upgrade' },
-    "subprocess-exited-with-error": { aciklama: "🔨 Build Hatası: Paket derlenemedi.", cozum: "Build araçlarını güncelleyip tekrar deniyorum...", healingType: 'build_deps' },
-    "Getting requirements to build wheel": { aciklama: "⚙️ Wheel Build Hatası: setuptools/pip eski.", cozum: "Build sistemini güncelleyip cache temizliyorum...", healingType: 'build_deps' },
-    "No matching distribution found": { aciklama: "🔍 Uyumsuz Sürüm: Python sürümünüzle uyumlu değil.", cozum: "Python sürümünüzü veya paket adını kontrol edin." },
-    "PermissionError": { aciklama: "🔒 İzin Hatası: Yazma yetkisi yok.", cozum: "Sanal ortamı yeniden oluşturuyorum...", healingType: 'venv_recreate' },
-    "SyntaxError": { aciklama: "✍️ Söz Dizimi Hatası: Kodda yazım yanlışı.", cozum: "Satır numarasını kontrol edin." },
-    "IndentationError": { aciklama: "↔️ Girinti Hatası: Hizalama yanlış.", cozum: "Boşluk/tab karışıklığını düzeltin." },
-    "NameError": { aciklama: "🏷️ Tanımsız İsim: Değişken tanımlanmamış.", cozum: "Değişkeni kullanmadan önce tanımlayın." },
-    "TypeError": { aciklama: "🔄 Tür Hatası: Yanlış veri türü.", cozum: "Veri türlerini kontrol edin." },
-    "ValueError": { aciklama: "⚠️ Değer Hatası: Geçersiz değer.", cozum: "Fonksiyona doğru değer verin." },
+    "ModuleNotFoundError": { aciklama: "📦 Eksik Modül: Bu paket/modül yüklü değil.", cozum: "Otomatik kuruyorum...", healingType: 'pip_install' },
+    "ImportError": { aciklama: "📥 İçe Aktarma Hatası: Modül bozuk veya eksik.", cozum: "Yeniden kuruyorum...", healingType: 'pip_install' },
+    "subprocess-exited-with-error": { aciklama: "🔨 Build Hatası: Paket derlenemedi.", cozum: "Build araçlarını güncelliyorum...", healingType: 'build_deps' },
+    "Getting requirements to build wheel": { aciklama: "⚙️ Wheel Build Hatası.", cozum: "setuptools/pip güncelleniyor...", healingType: 'build_deps' },
+    "PermissionError": { aciklama: "🔒 İzin Hatası.", cozum: "Sanal ortam sıfırlanıyor...", healingType: 'venv_recreate' },
+    "No matching distribution found": { aciklama: "🔍 Uyumsuz Sürüm.", cozum: "Python sürümünüzü kontrol edin." },
+    "SyntaxError": { aciklama: "✍️ Söz Dizimi Hatası.", cozum: "Satır numarasını kontrol edin." },
+    "IndentationError": { aciklama: "↔️ Girinti Hatası.", cozum: "Hizalamayı düzeltin." },
+    "NameError": { aciklama: "🏷️ Tanımsız İsim.", cozum: "Değişkeni tanımlayın." },
+    "TypeError": { aciklama: "🔄 Tür Hatası.", cozum: "Veri türlerini kontrol edin." },
+    "ValueError": { aciklama: "⚠️ Değer Hatası.", cozum: "Doğru değer verin." },
     "FileNotFoundError": { aciklama: "📁 Dosya Bulunamadı.", cozum: "Dosya yolunu kontrol edin." },
-    "ZeroDivisionError": { aciklama: "➗ Sıfıra Bölme Hatası.", cozum: "Bölen değeri kontrol edin." },
-    "AttributeError": { aciklama: "🔧 Nitelik Hatası: Nesnenin böyle özelliği yok.", cozum: "Nesne metodlarını kontrol edin." },
+    "ZeroDivisionError": { aciklama: "➗ Sıfıra Bölme.", cozum: "Bölen değeri kontrol edin." },
+    "AttributeError": { aciklama: "🔧 Nitelik Hatası.", cozum: "Nesne metodlarını kontrol edin." },
     "IndexError": { aciklama: "📋 Liste İndeksi Hatası.", cozum: "Liste uzunluğunu kontrol edin." },
-    "KeyError": { aciklama: "🔑 Anahtar Hatası: Sözlükte bu anahtar yok.", cozum: "Anahtarı kontrol edin." },
-    "ConnectionError": { aciklama: "🌐 Bağlantı Hatası.", cozum: "İnternet/URL kontrolü yapın." },
+    "KeyError": { aciklama: "🔑 Anahtar Hatası.", cozum: "Anahtarı kontrol edin." },
+    "ConnectionError": { aciklama: "🌐 Bağlantı Hatası.", cozum: "İnternet/URL kontrolü." },
     "Address already in use": { aciklama: "🚪 Port Meşgul.", cozum: "Farklı portta başlatıyorum...", komut: "port_degistir" },
     "RecursionError": { aciklama: "🔁 Özyineleme Hatası.", cozum: "Sonsuz döngüyü kontrol edin." },
     "MemoryError": { aciklama: "💾 Bellek Yetersiz.", cozum: "RAM kullanımını optimize edin." },
     "UnicodeDecodeError": { aciklama: "🔤 Karakter Kodlama Hatası.", cozum: "encoding='utf-8' kullanın." },
-    "TimeoutError": { aciklama: "⏱️ Zaman Aşımı.", cozum: "Bağlantı/döngü mantığını kontrol edin." }
+    "TimeoutError": { aciklama: "⏱️ Zaman Aşımı.", cozum: "Bağlantı mantığını kontrol edin." }
 };
 
 function turkceHataCozum(hataMesaji: string): { hataTur: string; cozum: HataCozum } | null {
@@ -46,11 +46,19 @@ function turkceHataCozum(hataMesaji: string): { hataTur: string; cozum: HataCozu
 // ==================== YARDIMCI FONKSİYONLAR ====================
 function runCommand(cmd: string, cwd: string): Promise<string> {
     return new Promise((resolve, reject) => {
-        exec(cmd, { cwd, maxBuffer: 1024 * 1024 * 10 }, (error, stdout, stderr) => {
+        exec(cmd, { cwd, maxBuffer: 1024 * 1024 * 10, shell: '/bin/bash' }, (error, stdout, stderr) => {
             if (error) reject(new Error(stderr || error.message));
             else resolve(stdout);
         });
     });
+}
+
+/**
+ * 🆕 POSIX UYUMLU AKTİVASYON KOMUTU
+ * Linux'ta source yerine . kullanılır, Windows'ta activate.bat
+ */
+function getActivateCmd(isWindows: boolean): string {
+    return isWindows ? '.venv\\Scripts\\activate.bat' : '. .venv/bin/activate';
 }
 
 function dosyaIcerikKontrol(dizin: string, dosyaAdi: string, kelime: string): boolean {
@@ -58,31 +66,107 @@ function dosyaIcerikKontrol(dizin: string, dosyaAdi: string, kelime: string): bo
     catch { return false; }
 }
 
+/**
+ * 🆕 GELİŞMİŞ PAKET TARAMA
+ * - Alt klasörleri tarar
+ * - from PyQt6.QtWebEngineWidgets import X kalıbını destekler
+ * - Kök paketi (PyQt6) çıkarır
+ */
 async function importEdilenPaketleriBul(rootPath: string): Promise<string[]> {
     const paketler = new Set<string>();
-    const stdLib = new Set(['os','sys','json','math','datetime','time','random','re','collections','itertools','functools','pathlib','typing','unittest','logging','argparse','csv','sqlite3','threading','multiprocessing','subprocess','shutil','glob','hashlib','abc','io','string','decimal','fractions','copy','pprint','textwrap','struct','codecs','unicodedata','locale','gettext']);
+    const stdLib = new Set([
+        'os','sys','json','math','datetime','time','random','re','collections',
+        'itertools','functools','pathlib','typing','unittest','logging','argparse',
+        'csv','sqlite3','threading','multiprocessing','subprocess','shutil','glob',
+        'hashlib','abc','io','string','decimal','fractions','copy','pprint',
+        'textwrap','struct','codecs','unicodedata','locale','gettext','enum',
+        'dataclasses','contextlib','warnings','traceback','inspect','dis',
+        'ast','token','tokenize','platform','signal','socket','http','urllib',
+        'email','html','xml','configparser','secrets','uuid','base64','binascii',
+        'array','bisect','heapq','queue','weakref','types','pdb','profile',
+        'cProfile','timeit','trace','gc','site','builtins','__future__'
+    ]);
+
+    // Mapping: alt modül -> kök paket adı
+    const paketEsleme: Record<string, string> = {
+        'PyQt6': 'PyQt6',
+        'PyQt5': 'PyQt5',
+        'cv2': 'opencv-python',
+        'sklearn': 'scikit-learn',
+        'bs4': 'beautifulsoup4',
+        'PIL': 'Pillow',
+        'yaml': 'pyyaml',
+        'dotenv': 'python-dotenv',
+        'jwt': 'PyJWT',
+        'serial': 'pyserial',
+        'usb': 'pyusb',
+        'gi': 'PyGObject',
+        'wx': 'wxPython',
+        'fitz': 'PyMuPDF',
+        'Bio': 'biopython',
+        'lxml': 'lxml',
+        'np': 'numpy',
+        'pd': 'pandas',
+        'tf': 'tensorflow',
+        'torch': 'torch',
+    };
+
     try {
-        const files = await vscode.workspace.findFiles('**/*.py', '**/{.venv,node_modules,__pycache__,.git,build,dist}/**');
+        const files = await vscode.workspace.findFiles('**/*.py', '**/{.venv,node_modules,__pycache__,.git,build,dist,env,ENV}/**');
         await Promise.all(files.map(async (file) => {
             try {
                 const content = await fs.promises.readFile(file.fsPath, 'utf-8');
-                (content.match(/^(?:import|from)\s+(\w+)/gm) || []).forEach(s => {
-                    const p = s.replace(/^(?:import|from)\s+/, '').split('.')[0];
-                    if (!stdLib.has(p)) paketler.add(p);
-                });
+                // Hem import X hem from X.Y.Z import W kalıplarını yakala
+                const matches = content.match(/^(?:import|from)\s+([\w.]+)/gm) || [];
+                for (const match of matches) {
+                    const fullMod = match.replace(/^(?:import|from)\s+/, '');
+                    const rootPkg = fullMod.split('.')[0];
+                    
+                    if (!stdLib.has(rootPkg)) {
+                        // Özel eşleştirme varsa kullan, yoksa kök paket adını al
+                        const pipPaket = paketEsleme[rootPkg] || rootPkg;
+                        paketler.add(pipPaket);
+                    }
+                }
             } catch {}
         }));
     } catch {}
     return Array.from(paketler);
 }
 
-async function eksikPaketleriKontrolEt(rootPath: string, pipCmd: string): Promise<string[]> {
+/**
+ * 🆕 GERÇEK DOĞRULAMA: python -c "import paket"
+ * pip show yerine gerçekten import edilebilir mi kontrol eder
+ */
+async function eksikPaketleriKontrolEt(rootPath: string, pythonCmd: string): Promise<string[]> {
     const importEdilen = await importEdilenPaketleriBul(rootPath);
     const eksikler: string[] = [];
+    
+    // Paralel kontrol (max 5 concurrent)
     for (let i = 0; i < importEdilen.length; i += 5) {
         const chunk = importEdilen.slice(i, i + 5);
-        const results = await Promise.allSettled(chunk.map(p => runCommand(`${pipCmd} show ${p}`, rootPath)));
-        results.forEach((r, idx) => { if (r.status === 'rejected') eksikler.push(chunk[idx]); });
+        const results = await Promise.allSettled(
+            chunk.map(paket => {
+                // Import adını geri çöz (pip paketi -> import adı)
+                const importAdi = paket === 'opencv-python' ? 'cv2' 
+                    : paket === 'scikit-learn' ? 'sklearn'
+                    : paket === 'beautifulsoup4' ? 'bs4'
+                    : paket === 'Pillow' ? 'PIL'
+                    : paket === 'pyyaml' ? 'yaml'
+                    : paket === 'python-dotenv' ? 'dotenv'
+                    : paket === 'PyJWT' ? 'jwt'
+                    : paket === 'pyserial' ? 'serial'
+                    : paket === 'PyGObject' ? 'gi'
+                    : paket === 'wxPython' ? 'wx'
+                    : paket === 'PyMuPDF' ? 'fitz'
+                    : paket === 'biopython' ? 'Bio'
+                    : paket;
+                return runCommand(`${pythonCmd} -c "import ${importAdi}"`, rootPath);
+            })
+        );
+        results.forEach((r, idx) => { 
+            if (r.status === 'rejected') eksikler.push(chunk[idx]); 
+        });
     }
     return eksikler;
 }
@@ -114,9 +198,31 @@ async function envDegiskenleriniTara(rootPath: string): Promise<string[]> {
 }
 
 // 🆕 SELF-HEALING MOTORU
-async function otomatikDuzelt(rootPath: string, tip: string, pipCmd: string, pythonCmd: string, progress: vscode.Progress<{ message?: string }>): Promise<boolean> {
+async function otomatikDuzelt(rootPath: string, tip: string, pipCmd: string, pythonCmd: string, progress: vscode.Progress<{ message?: string }>, hataMesaji?: string): Promise<boolean> {
     try {
         switch (tip) {
+            case 'pip_install': {
+                // Hata mesajından paket adını çıkar
+                const paketMatch = hataMesaji?.match(/No module named '([\w.]+)'/);
+                if (paketMatch) {
+                    const mod = paketMatch[1];
+                    const kokPaket = mod.split('.')[0];
+                    // Özel eşleştirme
+                    const pipPaket = kokPaket === 'PyQt6' ? 'PyQt6 PyQt6-WebEngine' 
+                        : kokPaket === 'cv2' ? 'opencv-python'
+                        : kokPaket === 'sklearn' ? 'scikit-learn'
+                        : kokPaket === 'bs4' ? 'beautifulsoup4'
+                        : kokPaket === 'PIL' ? 'Pillow'
+                        : kokPaket === 'yaml' ? 'pyyaml'
+                        : kokPaket === 'dotenv' ? 'python-dotenv'
+                        : kokPaket;
+                    
+                    progress.report({ message: `📦 ${pipPaket} kuruluyor...` });
+                    await runCommand(`${pipCmd} install ${pipPaket}`, rootPath);
+                    return true;
+                }
+                return false;
+            }
             case 'build_deps':
                 progress.report({ message: "🔧 Build araçları güncelleniyor..." });
                 await runCommand(`${pipCmd} install --upgrade pip setuptools wheel`, rootPath);
@@ -130,10 +236,6 @@ async function otomatikDuzelt(rootPath: string, tip: string, pipCmd: string, pyt
                 await runCommand(`${pythonCmd} -m venv .venv`, rootPath);
                 progress.report({ message: "📦 Temel paketler kuruluyor..." });
                 await runCommand(`${pipCmd} install --upgrade pip setuptools wheel`, rootPath);
-                return true;
-            case 'cache_clear':
-                progress.report({ message: "🧹 Pip cache temizleniyor..." });
-                await runCommand(`${pipCmd} cache purge`, rootPath);
                 return true;
             default: return false;
         }
@@ -200,13 +302,15 @@ export function activate(context: vscode.ExtensionContext) {
     const wf = vscode.workspace.workspaceFolders?.[0];
     if (wf) gitignoreOlustur(wf.uri.fsPath);
 
-    // ==================== HAZIRLA VE ÇALIŞTIR (SELF-HEALING ENTEGRASYONU) ====================
+    // ==================== HAZIRLA VE ÇALIŞTIR (SELF-HEALING + POSIX FIX) ====================
     const hazirlaKomutu = vscode.commands.registerCommand('pyotobaslat.hazirlaVeCalistir', async () => {
         const w = vscode.workspace.workspaceFolders?.[0];
         if (!w) { vscode.window.showErrorMessage('❌ Lütfen önce bir Python proje klasörü açın!'); return; }
         const rp = w.uri.fsPath, win = process.platform === 'win32';
-        const pc = win ? 'python' : 'python3', pip = win ? '.venv\\Scripts\\pip.exe' : '.venv/bin/pip';
+        const pc = win ? 'python' : 'python3';
+        const pip = win ? '.venv\\Scripts\\pip.exe' : '.venv/bin/pip';
         const vp = path.join(rp, '.venv'), req = path.join(rp, 'requirements.txt');
+        const act = getActivateCmd(win); // 🆕 POSIX UYUMLU
 
         await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "🐍 PyOtoBaşlat Çalışıyor...", cancellable: false }, async (progress) => {
             try {
@@ -230,30 +334,34 @@ export function activate(context: vscode.ExtensionContext) {
                         const hm = installError.message || String(installError);
                         const hb = turkceHataCozum(hm);
                         if (hb?.cozum.healingType && config.get('selfHealingAktif')) {
-                            vscode.window.showWarningMessage(`⚠️ Kurulum hatası algılandı. Otomatik düzeltiliyor...`);
-                            const duzeltildi = await otomatikDuzelt(rp, hb.cozum.healingType, pip, pc, progress);
+                            vscode.window.showWarningMessage(`⚠️ Kurulum hatası. Otomatik düzeltiliyor...`);
+                            const duzeltildi = await otomatikDuzelt(rp, hb.cozum.healingType, pip, pc, progress, hm);
                             if (duzeltildi) {
                                 progress.report({ message: "🔄 Kurulum tekrar deneniyor..." });
                                 await runCommand(`${pip} install -r requirements.txt`, rp);
-                                vscode.window.showInformationMessage('✅ Hata otomatik düzeltildi ve kurulum tamamlandı!');
+                                vscode.window.showInformationMessage('✅ Hata düzeltildi, kurulum tamamlandı!');
                             } else { throw installError; }
                         } else { throw installError; }
                     }
                 }
 
-                // 3. EKSİK PAKETLERİ AKILLI ALGILAMA
+                // 3. 🆕 GERÇEK EKSİK PAKET TARAMASI (python -c "import")
                 if (config.get('otomatikPaketKontrol')) {
-                    progress.report({ message: "Eksik paketler taranıyor..." });
-                    const eksik = await eksikPaketleriKontrolEt(rp, pip);
+                    progress.report({ message: "Eksik modüller taranıyor (derin tarama)..." });
+                    const venvPython = win ? '.venv\\Scripts\\python.exe' : '.venv/bin/python';
+                    const eksik = await eksikPaketleriKontrolEt(rp, venvPython);
                     if (eksik.length > 0) {
-                        const sec = await vscode.window.showWarningMessage(`📦 ${eksik.length} eksik paket: ${eksik.slice(0,3).join(', ')}`, "Otomatik Kur", "Yoksay");
+                        const sec = await vscode.window.showWarningMessage(
+                            `📦 ${eksik.length} eksik modül: ${eksik.slice(0,3).join(', ')}`, 
+                            "Otomatik Kur", "Yoksay"
+                        );
                         if (sec === "Otomatik Kur") {
-                            progress.report({ message: "Paketler kuruluyor..." });
+                            progress.report({ message: "Eksik modüller kuruluyor..." });
                             await runCommand(`${pip} install ${eksik.join(' ')}`, rp);
                             let ri = fs.existsSync(req) ? fs.readFileSync(req, 'utf-8') : '';
                             eksik.forEach(p => { if (!ri.includes(p)) ri += `\n${p}`; });
                             fs.writeFileSync(req, ri.trim());
-                            vscode.window.showInformationMessage(`✅ ${eksik.length} paket kuruldu!`);
+                            vscode.window.showInformationMessage(`✅ ${eksik.length} modül kuruldu!`);
                         }
                     }
                 }
@@ -263,7 +371,10 @@ export function activate(context: vscode.ExtensionContext) {
                     const envVars = await envDegiskenleriniTara(rp);
                     const envPath = path.join(rp, '.env');
                     if (envVars.length > 0 && !fs.existsSync(envPath)) {
-                        const sec = await vscode.window.showInformationMessage(`🌍 ${envVars.length} ortam değişkeni tespit edildi. .env oluşturulsun mu?`, "Şablon Oluştur", "Sonra");
+                        const sec = await vscode.window.showInformationMessage(
+                            `🌍 ${envVars.length} ortam değişkeni tespit edildi. .env oluşturulsun mu?`, 
+                            "Şablon Oluştur", "Sonra"
+                        );
                         if (sec === "Şablon Oluştur") {
                             fs.writeFileSync(envPath, `# PyOtoBaşlat tarafından oluşturuldu\n\n${envVars.map(v => `${v}=\n`).join('')}`);
                             vscode.window.showInformationMessage('✅ .env şablonu oluşturuldu!');
@@ -276,16 +387,22 @@ export function activate(context: vscode.ExtensionContext) {
                 // 5. PROJE TÜRÜ ALGILAMA VE ÇALIŞTIRMA
                 const mod = config.get('calistirmaModu') as string;
                 const term = getOrCreateTerminal('🐍 PyOtoBaşlat');
-                const act = win ? '.venv\\Scripts\\activate' : 'source .venv/bin/activate';
                 let cmd = '';
-                if (mod === 'django' || (mod === 'otomatik' && fs.existsSync(path.join(rp, 'manage.py')))) { cmd = `${act} && python manage.py runserver`; progress.report({ message: "Django başlatılıyor..." }); }
-                else if (mod === 'flask' || (mod === 'otomatik' && fs.existsSync(path.join(rp, 'app.py')) && dosyaIcerikKontrol(rp, 'app.py', 'Flask'))) { cmd = `${act} && flask run`; progress.report({ message: "Flask başlatılıyor..." }); }
-                else if (mod === 'fastapi' || (mod === 'otomatik' && dosyaIcerikKontrol(rp, 'main.py', 'FastAPI'))) { cmd = `${act} && uvicorn main:app --reload`; progress.report({ message: "FastAPI başlatılıyor..." }); }
-                else {
+                if (mod === 'django' || (mod === 'otomatik' && fs.existsSync(path.join(rp, 'manage.py')))) { 
+                    cmd = `${act} && python manage.py runserver`; 
+                    progress.report({ message: "Django başlatılıyor..." }); 
+                } else if (mod === 'flask' || (mod === 'otomatik' && fs.existsSync(path.join(rp, 'app.py')) && dosyaIcerikKontrol(rp, 'app.py', 'Flask'))) { 
+                    cmd = `${act} && flask run`; 
+                    progress.report({ message: "Flask başlatılıyor..." }); 
+                } else if (mod === 'fastapi' || (mod === 'otomatik' && dosyaIcerikKontrol(rp, 'main.py', 'FastAPI'))) { 
+                    cmd = `${act} && uvicorn main:app --reload`; 
+                    progress.report({ message: "FastAPI başlatılıyor..." }); 
+                } else {
                     const pyf = fs.readdirSync(rp).filter(f => f.endsWith('.py'));
                     const tf = pyf.find(f => ['main.py','app.py','run.py'].includes(f)) || pyf[0];
                     if (!tf) throw new Error('Projede .py dosyası bulunamadı!');
-                    cmd = `${act} && python ${tf}`; progress.report({ message: `${tf} başlatılıyor...` });
+                    cmd = `${act} && python ${tf}`; 
+                    progress.report({ message: `${tf} başlatılıyor...` });
                 }
                 term.sendText(cmd); term.show();
                 vscode.window.showInformationMessage('🚀 Proje başarıyla başlatıldı!');
@@ -293,6 +410,17 @@ export function activate(context: vscode.ExtensionContext) {
             } catch (error: any) {
                 const hm = error.message || String(error);
                 const hb = turkceHataCozum(hm);
+                
+                // 🆕 SELF-HEALING: ModuleNotFoundError için otomatik kur
+                if (hb?.cozum.healingType === 'pip_install' && config.get('selfHealingAktif')) {
+                    vscode.window.showWarningMessage(`⚠️ ${hb.cozum.aciklama} Otomatik düzeltiliyor...`);
+                    const duzeltildi = await otomatikDuzelt(rp, 'pip_install', pip, pc, { report: (m: any) => {} } as any, hm);
+                    if (duzeltildi) {
+                        vscode.window.showInformationMessage('✅ Modül kuruldu! Projeyi tekrar başlatın.');
+                        return;
+                    }
+                }
+                
                 if (hb && config.get('hataCevirmeniAktif')) {
                     const { hataTur, cozum } = hb;
                     const btns = ["Anladım"]; if (cozum.komut) btns.push("Manuel Düzelt"); btns.push("Detaylı Yardım");
@@ -301,23 +429,27 @@ export function activate(context: vscode.ExtensionContext) {
                         const term = getOrCreateTerminal('🐍 PyOtoBaşlat');
                         if (cozum.komut === "port_degistir") {
                             const port = await vscode.window.showInputBox({ prompt: "Yeni port:", value: "8001" });
-                            if (port) { const a = win ? '.venv\\Scripts\\activate' : 'source .venv/bin/activate'; term.sendText(`${a} && python manage.py runserver ${port}`); term.show(); }
+                            if (port) { term.sendText(`${act} && python manage.py runserver ${port}`); term.show(); }
                         } else {
-                            const pkg = hm.match(/No module named '(\w+)'/)?.[1] || 'paket';
-                            term.sendText(cozum.komut.replace('{paket}', pkg)); term.show();
+                            const pkg = hm.match(/No module named '([\w.]+)'/)?.[1]?.split('.')[0] || 'paket';
+                            term.sendText(`${pip} install ${pkg}`); term.show();
                         }
-                    } else if (sec === "Detaylı Yardım") { vscode.env.openExternal(vscode.Uri.parse(`https://docs.python.org/3/library/exceptions.html#${hataTur.toLowerCase()}`)); }
-                } else { vscode.window.showErrorMessage(`❌ Hata: ${hm}`); }
+                    } else if (sec === "Detaylı Yardım") { 
+                        vscode.env.openExternal(vscode.Uri.parse(`https://docs.python.org/3/library/exceptions.html#${hataTur.toLowerCase()}`)); 
+                    }
+                } else { 
+                    vscode.window.showErrorMessage(`❌ Hata: ${hm}`); 
+                }
             }
         });
     });
 
-    // ==================== PERFORMANS ANALİZİ (WEBVIEW) ====================
+    // ==================== PERFORMANS ANALİZİ (WEBVIEW + POSIX FIX) ====================
     const performansKomutu = vscode.commands.registerCommand('pyotobaslat.performansAnalizi', async () => {
         const w = vscode.workspace.workspaceFolders?.[0];
         if (!w) { vscode.window.showErrorMessage('❌ Python klasörü açın!'); return; }
         const rp = w.uri.fsPath, win = process.platform === 'win32';
-        const act = win ? '.venv\\Scripts\\activate' : 'source .venv/bin/activate';
+        const act = getActivateCmd(win); // 🆕 POSIX UYUMLU
         const pyf = fs.readdirSync(rp).filter(f => f.endsWith('.py'));
         const tf = pyf.find(f => ['main.py','app.py','run.py'].includes(f)) || pyf[0];
         if (!tf) { vscode.window.showErrorMessage('❌ .py dosyası bulunamadı!'); return; }
@@ -340,19 +472,20 @@ export function activate(context: vscode.ExtensionContext) {
         if (!w) { vscode.window.showErrorMessage('❌ Python klasörü açın!'); return; }
         const rp = w.uri.fsPath, win = process.platform === 'win32';
         const pip = win ? '.venv\\Scripts\\pip.exe' : '.venv/bin/pip';
-        await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "📦 Paketler kontrol ediliyor...", cancellable: false }, async (progress) => {
+        const venvPython = win ? '.venv\\Scripts\\python.exe' : '.venv/bin/python';
+        await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "📦 Derin paket taraması...", cancellable: false }, async (progress) => {
             try {
-                const eksik = await eksikPaketleriKontrolEt(rp, pip);
-                if (eksik.length === 0) { vscode.window.showInformationMessage('✅ Tüm paketler kurulu!'); return; }
-                const sec = await vscode.window.showWarningMessage(`📦 ${eksik.length} eksik paket: ${eksik.join(', ')}`, "Hepsini Kur", "İptal");
+                const eksik = await eksikPaketleriKontrolEt(rp, venvPython);
+                if (eksik.length === 0) { vscode.window.showInformationMessage('✅ Tüm modüller kurulu!'); return; }
+                const sec = await vscode.window.showWarningMessage(`📦 ${eksik.length} eksik modül: ${eksik.join(', ')}`, "Hepsini Kur", "İptal");
                 if (sec === "Hepsini Kur") {
-                    progress.report({ message: "Paketler kuruluyor..." });
+                    progress.report({ message: "Modüller kuruluyor..." });
                     await runCommand(`${pip} install ${eksik.join(' ')}`, rp);
                     const req = path.join(rp, 'requirements.txt');
                     let ri = fs.existsSync(req) ? fs.readFileSync(req, 'utf-8') : '';
                     eksik.forEach(p => { if (!ri.includes(p)) ri += `\n${p}`; });
                     fs.writeFileSync(req, ri.trim());
-                    vscode.window.showInformationMessage(`✅ ${eksik.length} paket kuruldu!`);
+                    vscode.window.showInformationMessage(`✅ ${eksik.length} modül kuruldu!`);
                 }
             } catch (e: any) { vscode.window.showErrorMessage(`❌ Paket hatası: ${e.message}`); }
         });
@@ -364,7 +497,7 @@ export function activate(context: vscode.ExtensionContext) {
         if (!w) { vscode.window.showErrorMessage('❌ Python klasörü açın!'); return; }
         const rp = w.uri.fsPath, win = process.platform === 'win32';
         const pip = win ? '.venv\\Scripts\\pip.exe' : '.venv/bin/pip';
-        const act = win ? '.venv\\Scripts\\activate' : 'source .venv/bin/activate';
+        const act = getActivateCmd(win); // 🆕 POSIX UYUMLU
         await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: "🔒 Güvenlik taraması...", cancellable: false }, async (progress) => {
             try {
                 try { await runCommand(`${pip} show pip-audit`, rp); } catch { progress.report({ message: "pip-audit kuruluyor..." }); await runCommand(`${pip} install pip-audit`, rp); }
