@@ -1,8 +1,8 @@
 {
   "name": "pyotobaslat",
   "displayName": "PyOtoBaşlat - Türkçe Python Sihirbazı",
-  "description": "Python projelerini tek tuşla otomatik kurar, venv oluşturur, hataları Türkçeleştirir, görsel performans analizi yapar, .env sihirbazı sunar, güvenlik taraması yapar ve bağımlılıkları akıllıca yönetir.",
-  "version": "1.3.2",
+  "description": "Python projelerini tek tuşla kurar, venv oluşturur, hataları Türkçeleştirir, otomatik düzeltir, görsel performans analizi yapar, .env sihirbazı sunar ve güvenlik taraması yapar.",
+  "version": "2.0.0",
   "publisher": "Lionapp1",
   "license": "MIT",
   "icon": "icon.png",
@@ -81,38 +81,38 @@
         "pyotobaslat.otomatikKurulum": {
           "type": "boolean",
           "default": true,
-          "description": "Proje açıldığında requirements.txt varsa otomatik paket kurulumu yapar."
+          "description": "requirements.txt varsa otomatik paket kurulumu yapar."
         },
         "pyotobaslat.venvOtomatikOlustur": {
           "type": "boolean",
           "default": true,
-          "description": ".venv klasörü yoksa otomatik sanal ortam oluşturur."
+          "description": ".venv yoksa otomatik sanal ortam oluşturur."
         },
         "pyotobaslat.hataCevirmeniAktif": {
           "type": "boolean",
           "default": true,
-          "description": "Python hatalarını yakalayıp Türkçe açıklama ve çözüm önerisi gösterir."
+          "description": "Python hatalarını Türkçeleştirir ve otomatik düzeltir."
         },
         "pyotobaslat.calistirmaModu": {
           "type": "string",
           "enum": ["otomatik", "django", "flask", "fastapi", "script"],
           "default": "otomatik",
-          "description": "Çalıştırma modunu manuel seçin veya 'otomatik' bırakın."
+          "description": "Çalıştırma modunu seçin veya otomatik algılatın."
         },
         "pyotobaslat.otomatikPaketKontrol": {
           "type": "boolean",
           "default": true,
-          "description": "Kodda import edilen ama kurulu olmayan paketleri algılayıp kurulum önerir."
-        },
-        "pyotobaslat.guvenlikTaramasiOtomatik": {
-          "type": "boolean",
-          "default": false,
-          "description": "Proje başlatıldığında otomatik güvenlik taraması yapar (pip-audit gerekir)."
+          "description": "Import edilen ama kurulu olmayan paketleri algılar."
         },
         "pyotobaslat.envSihirbaziAktif": {
           "type": "boolean",
           "default": true,
-          "description": "Koddaki ortam değişkenlerini tarayıp .env şablonu oluşturmayı teklif eder."
+          "description": "Ortam değişkenlerini tarayıp .env şablonu oluşturur."
+        },
+        "pyotobaslat.selfHealingAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": "Build/pip hatalarını otomatik olarak düzeltmeyi dener."
         }
       }
     }
