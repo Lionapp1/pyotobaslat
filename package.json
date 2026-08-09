@@ -2,7 +2,7 @@
   "name": "pyotobaslat",
   "displayName": "PyOtoBaşlat - Türkçe Python Sihirbazı",
   "description": "Python projelerini tek tuşla kurar, venv oluşturur, hataları Türkçeleştirir, otomatik düzeltir, görsel performans analizi yapar, .env sihirbazı sunar ve güvenlik taraması yapar.",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "publisher": "Lionapp1",
   "license": "MIT",
   "icon": "icon.png",
