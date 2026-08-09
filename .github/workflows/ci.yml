@@ -13,6 +13,9 @@ jobs:
     steps:
       - name: 📥 Repo'yu klonla
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: 🟢 Node.js kur
         uses: actions/setup-node@v4
@@ -22,6 +25,36 @@ jobs:
 
       - name: 📦 Bağımlılıkları kur
         run: npm ci
+
+      - name: 🔢 Versiyonu otomatik artır (patch)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          # Mevcut versiyonu oku
+          CURRENT=$(node -p "require('./package.json').version")
+          echo "📌 Mevcut versiyon: $CURRENT"
+          
+          # Patch versiyonunu artır (2.0.0 → 2.0.1)
+          NEW_VERSION=$(node -e "
+            const v = '$CURRENT'.split('.');
+            v[2] = parseInt(v[2]) + 1;
+            console.log(v.join('.'));
+          ")
+          echo "🚀 Yeni versiyon: $NEW_VERSION"
+          
+          # package.json'u güncelle
+          node -e "
+            const fs = require('fs');
+            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
+            pkg.version = '$NEW_VERSION';
+            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
+          "
+          
+          # Git'e commit et ve pushla
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
+          git push
 
       - name: 🔨 Derle
         run: npm run compile
