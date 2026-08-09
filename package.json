@@ -1,0 +1,130 @@
+{
+  "name": "pyotobaslat",
+  "displayName": "PyOtoBaşlat - Türkçe Python Sihirbazı",
+  "description": "Python projelerini tek tuşla otomatik kurar, venv oluşturur, hataları Türkçeleştirir, görsel performans analizi yapar, .env sihirbazı sunar, güvenlik taraması yapar ve bağımlılıkları akıllıca yönetir.",
+  "version": "1.3.2",
+  "publisher": "Lionapp1",
+  "license": "MIT",
+  "icon": "icon.png",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Lionapp1/pyotobaslat"
+  },
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": ["Programming Languages", "Other"],
+  "activationEvents": ["onLanguage:python"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "pyotobaslat.hazirlaVeCalistir",
+        "title": "🐍 PyOtoBaşlat: Projeyi Hazırla ve Çalıştır",
+        "icon": "$(play)"
+      },
+      {
+        "command": "pyotobaslat.performansAnalizi",
+        "title": "⚡ PyOtoBaşlat: Görsel Performans Analizi",
+        "icon": "$(graph)"
+      },
+      {
+        "command": "pyotobaslat.paketleriGuncelle",
+        "title": "📦 PyOtoBaşlat: Eksik Paketleri Kur",
+        "icon": "$(cloud-download)"
+      },
+      {
+        "command": "pyotobaslat.guvenlikTaramasi",
+        "title": "🔒 PyOtoBaşlat: Güvenlik Açığı Tara",
+        "icon": "$(shield)"
+      },
+      {
+        "command": "pyotobaslat.ayarlarAc",
+        "title": "⚙️ PyOtoBaşlat: Ayarları Aç",
+        "icon": "$(gear)"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "pyotobaslat.hazirlaVeCalistir",
+          "group": "navigation",
+          "when": "editorLangId == python"
+        },
+        {
+          "command": "pyotobaslat.guvenlikTaramasi",
+          "group": "navigation@2",
+          "when": "editorLangId == python"
+        }
+      ]
+    },
+    "keybindings": [
+      {
+        "command": "pyotobaslat.hazirlaVeCalistir",
+        "key": "f5",
+        "when": "editorLangId == python"
+      },
+      {
+        "command": "pyotobaslat.performansAnalizi",
+        "key": "ctrl+shift+f5",
+        "when": "editorLangId == python"
+      },
+      {
+        "command": "pyotobaslat.guvenlikTaramasi",
+        "key": "ctrl+shift+s",
+        "when": "editorLangId == python"
+      }
+    ],
+    "configuration": {
+      "title": "🐍 PyOtoBaşlat Ayarları",
+      "properties": {
+        "pyotobaslat.otomatikKurulum": {
+          "type": "boolean",
+          "default": true,
+          "description": "Proje açıldığında requirements.txt varsa otomatik paket kurulumu yapar."
+        },
+        "pyotobaslat.venvOtomatikOlustur": {
+          "type": "boolean",
+          "default": true,
+          "description": ".venv klasörü yoksa otomatik sanal ortam oluşturur."
+        },
+        "pyotobaslat.hataCevirmeniAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": "Python hatalarını yakalayıp Türkçe açıklama ve çözüm önerisi gösterir."
+        },
+        "pyotobaslat.calistirmaModu": {
+          "type": "string",
+          "enum": ["otomatik", "django", "flask", "fastapi", "script"],
+          "default": "otomatik",
+          "description": "Çalıştırma modunu manuel seçin veya 'otomatik' bırakın."
+        },
+        "pyotobaslat.otomatikPaketKontrol": {
+          "type": "boolean",
+          "default": true,
+          "description": "Kodda import edilen ama kurulu olmayan paketleri algılayıp kurulum önerir."
+        },
+        "pyotobaslat.guvenlikTaramasiOtomatik": {
+          "type": "boolean",
+          "default": false,
+          "description": "Proje başlatıldığında otomatik güvenlik taraması yapar (pip-audit gerekir)."
+        },
+        "pyotobaslat.envSihirbaziAktif": {
+          "type": "boolean",
+          "default": true,
+          "description": "Koddaki ortam değişkenlerini tarayıp .env şablonu oluşturmayı teklif eder."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "files": ["out/**", "package.json", "icon.png"],
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
