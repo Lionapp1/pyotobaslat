@@ -12,10 +12,10 @@ jobs:
     
     steps:
       - name: 📥 Repo'yu klonla
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
+      uses: actions/checkout@v4
+   with:
+     fetch-depth: 0
+     token: ${{ secrets.GH_PAT }}  # GITHUB_TOKEN yerine kendi token'ın
 
       - name: 🟢 Node.js kur
         uses: actions/setup-node@v4
