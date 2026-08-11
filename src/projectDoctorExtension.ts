@@ -6,16 +6,31 @@ import { analyzeProject, detectFramework, formatReport, IMPORT_TO_PACKAGE } from
 
 let output: vscode.OutputChannel;
 function rootPath(): string | undefined { return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath; }
-function pythonPath(root: string): string {
+function venvPython(root: string): string | undefined {
     const win = process.platform === 'win32';
     const candidates = [path.join(root, '.venv', win ? 'Scripts/python.exe' : 'bin/python'), path.join(root, 'venv', win ? 'Scripts/python.exe' : 'bin/python')];
-    return candidates.find(fs.existsSync) || (win ? 'python' : 'python3');
+    return candidates.find(fs.existsSync);
 }
+function pythonPath(root: string): string { return venvPython(root) || (process.platform === 'win32' ? 'python' : 'python3'); }
 function run(command: string, args: string[], cwd: string, timeout = 180000): Promise<string> {
     return new Promise((resolve, reject) => execFile(command, args, { cwd, timeout, maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
         const text = `${stdout || ''}\n${stderr || ''}`.trim();
         if (error) reject(new Error(text || error.message)); else resolve(text);
     }));
+}
+async function selectProjectInterpreter(root: string): Promise<void> {
+    const interpreter = venvPython(root); if (!interpreter) return;
+    const config = vscode.workspace.getConfiguration('python');
+    const current = config.get<string>('defaultInterpreterPath');
+    if (current !== interpreter) {
+        await config.update('defaultInterpreterPath', interpreter, vscode.ConfigurationTarget.Workspace);
+        output.appendLine(`🐍 Python yorumlayıcısı .venv olarak seçildi: ${interpreter}`);
+    }
+}
+function activateVenvCommand(root: string): string {
+    const win = process.platform === 'win32';
+    if (win) return `$env:VIRTUAL_ENV="${path.join(root, '.venv')}"; $env:PATH="${path.join(root, '.venv', 'Scripts')};$env:PATH"`;
+    return `source ${JSON.stringify(path.join(root, '.venv', 'bin', 'activate'))}`;
 }
 function ensureGitignore(root: string): void {
     const file = path.join(root, '.gitignore'); const wanted = ['.venv/', 'venv/', '__pycache__/', '.pytest_cache/', '.mypy_cache/', '.ruff_cache/', '.env'];
@@ -57,20 +72,11 @@ async function ensureTooling(root: string): Promise<void> {
     catch { try { await run(python, ['-m', 'pip', 'install', '--disable-pip-version-check', 'ruff'], root, 300000); } catch (e: any) { output.appendLine(`Ruff kurulamadı: ${e.message}`); } }
 }
 async function autoFixPython(root: string): Promise<void> {
-    await ensureTooling(root);
-    const python = pythonPath(root);
-    try {
-        output.appendLine('Python kodu taranıyor ve güvenli Ruff düzeltmeleri uygulanıyor...');
-        const result = await run(python, ['-m', 'ruff', 'check', '.', '--fix'], root, 300000);
-        if (result) output.appendLine(result);
-    } catch (e: any) { output.appendLine(`Ruff düzeltme sonucu: ${e.message}`); }
-    try {
-        await run(python, ['-m', 'compileall', '-q', '.'], root, 300000);
-        output.appendLine('Python syntax kontrolü başarılı.');
-    } catch (e: any) {
-        output.appendLine(`Python syntax hatası bulundu: ${e.message}`);
-        throw new Error('Python kodunda otomatik düzeltilemeyen bir syntax hatası var. Çıktıyı inceleyin.');
-    }
+    await ensureTooling(root); const python = pythonPath(root);
+    try { const result = await run(python, ['-m', 'ruff', 'check', '.', '--fix'], root, 300000); if (result) output.appendLine(result); }
+    catch (e: any) { output.appendLine(`Ruff düzeltme sonucu: ${e.message}`); }
+    try { await run(python, ['-m', 'compileall', '-q', '.'], root, 300000); output.appendLine('Python syntax kontrolü başarılı.'); }
+    catch (e: any) { output.appendLine(`Python syntax hatası bulundu: ${e.message}`); throw new Error('Python kodunda otomatik düzeltilemeyen bir syntax hatası var. Çıktıyı inceleyin.'); }
 }
 function launchCommand(root: string, framework: string, file: string): { command: string; args: string[] } {
     const interpreter = pythonPath(root);
@@ -81,17 +87,20 @@ function launchCommand(root: string, framework: string, file: string): { command
     return { command: interpreter, args: [file] };
 }
 async function launch(root: string): Promise<void> {
+    await selectProjectInterpreter(root);
     const configured = vscode.workspace.getConfiguration('pyotobaslat').get<string>('calistirmaModu', 'otomatik'); const framework = configured === 'otomatik' ? detectFramework(root) : configured;
     const file = entry(root, framework); if (!file) throw new Error('Çalıştırılacak Python dosyası bulunamadı.'); const spec = launchCommand(root, framework, file);
     const term = vscode.window.terminals.find(t => t.name === '🐍 PyOtoBaşlat') || vscode.window.createTerminal('🐍 PyOtoBaşlat');
-    term.sendText([spec.command, ...spec.args].map(x => /\s/.test(x) ? JSON.stringify(x) : x).join(' ')); term.show();
+    const activation = venvPython(root) ? activateVenvCommand(root) : '';
+    if (activation) term.sendText(activation, true);
+    term.sendText([spec.command, ...spec.args].map(x => /\s/.test(x) ? JSON.stringify(x) : x).join(' '), true); term.show();
 }
 async function doctor(root: string): Promise<void> { const report = analyzeProject(root); const markdown = formatReport(report); output.appendLine(markdown); output.show(true); const doc = await vscode.workspace.openTextDocument({ content: markdown, language: 'markdown' }); await vscode.window.showTextDocument(doc, { preview: false }); }
 async function prepare(root: string): Promise<void> {
     const cfg = vscode.workspace.getConfiguration('pyotobaslat');
     await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: 'PyOtoBaşlat hazırlanıyor...', cancellable: false }, async progress => {
         const venv = path.join(root, '.venv'); if (cfg.get('venvOtomatikOlustur', true) && !fs.existsSync(venv)) { progress.report({ message: 'Sanal ortam oluşturuluyor...' }); await run(process.platform === 'win32' ? 'python' : 'python3', ['-m', 'venv', '.venv'], root, 300000); }
-        ensureGitignore(root); const python = pythonPath(root);
+        ensureGitignore(root); await selectProjectInterpreter(root); const python = pythonPath(root);
         try { await run(python, ['-m', 'pip', 'install', '--upgrade', 'pip', 'setuptools', 'wheel'], root, 300000); } catch (e: any) { output.appendLine(`pip araçları güncellenemedi: ${e.message}`); }
         if (cfg.get('otomatikKurulum', true) && fs.existsSync(path.join(root, 'requirements.txt'))) { progress.report({ message: 'requirements.txt kuruluyor...' }); try { await run(python, ['-m', 'pip', 'install', '-r', 'requirements.txt'], root, 600000); } catch (e: any) { output.appendLine(`requirements.txt kurulumu tamamlanamadı: ${e.message}`); vscode.window.showWarningMessage('requirements.txt içinde hata var; eksik importlar otomatik onarılacak.'); } }
         if (cfg.get('otomatikPaketKontrol', true)) { const report = analyzeProject(root); await repairPackages(root, report.imports, progress); }
@@ -100,7 +109,7 @@ async function prepare(root: string): Promise<void> {
     await launch(root);
 }
 async function security(root: string): Promise<void> { try { output.appendLine('pip-audit\n' + await run(pythonPath(root), ['-m', 'pip_audit'], root)); } catch (e: any) { output.appendLine('pip-audit\n' + e.message); vscode.window.showWarningMessage('pip-audit çalışmadı.'); } output.show(true); }
-async function quality(root: string): Promise<void> { const tool = vscode.workspace.getConfiguration('pyotobaslat').get<string>('kodKalitesiAraci', 'ruff'); try { output.appendLine(`${tool}\n` + await run(tool, ['check', '.'], root)); } catch (e: any) { output.appendLine(`${tool}\n` + e.message); } output.show(true); }
+async function quality(root: string): Promise<void> { const tool = vscode.workspace.getConfiguration('pyotobaslat').get<string>('kodKalitesiAraci', 'ruff'); try { output.appendLine(`${tool}\n` + await run(pythonPath(root), ['-m', tool, 'check', '.'], root)); } catch (e: any) { output.appendLine(`${tool}\n` + e.message); } output.show(true); }
 async function tests(root: string): Promise<void> { const runner = vscode.workspace.getConfiguration('pyotobaslat').get<string>('testCalistirici', 'pytest'); const args = runner === 'unittest' ? ['-m', 'unittest', 'discover', '-v'] : ['-m', 'pytest', '-q']; try { output.appendLine('Testler\n' + await run(pythonPath(root), args, root)); } catch (e: any) { output.appendLine('Testler\n' + e.message); } output.show(true); }
 async function performance(root: string): Promise<void> { const file = entry(root, detectFramework(root)); if (!file) throw new Error('Profil edilecek dosya bulunamadı.'); output.appendLine('cProfile\n' + await run(pythonPath(root), ['-m', 'cProfile', '-s', 'cumulative', file], root)); output.show(true); }
 export function activate(context: vscode.ExtensionContext): void {
