@@ -25,6 +25,9 @@ export interface ProjectReport {
     findings: DoctorFinding[];
 }
 
+// Import adı ile PyPI paket adı aynı olmak zorunda değildir.
+// Sadece burada açıkça eşleştirdiğimiz dış paketleri otomatik kuruyoruz;
+// böylece proje içindeki modüller yanlışlıkla PyPI'dan kurulmaz.
 const IMPORT_TO_PACKAGE: Record<string, string> = {
     cv2: 'opencv-python', PIL: 'Pillow', sklearn: 'scikit-learn', yaml: 'PyYAML',
     dotenv: 'python-dotenv', bs4: 'beautifulsoup4', rest_framework: 'djangorestframework',
@@ -34,7 +37,12 @@ const IMPORT_TO_PACKAGE: Record<string, string> = {
     aiohttp: 'aiohttp', sqlalchemy: 'SQLAlchemy', pymongo: 'pymongo', redis: 'redis',
     openai: 'openai', anthropic: 'anthropic', transformers: 'transformers', torch: 'torch',
     pandas: 'pandas', numpy: 'numpy', matplotlib: 'matplotlib', plotly: 'plotly',
-    pytest: 'pytest', rich: 'rich', psutil: 'psutil'
+    pytest: 'pytest', rich: 'rich', psutil: 'psutil',
+    PySide6: 'PySide6', PyQt6: 'PyQt6', PyQt5: 'PyQt5', cv: 'opencv-python',
+    PILImage: 'Pillow', lxml: 'lxml', magic: 'python-magic', bcrypt: 'bcrypt',
+    cryptography: 'cryptography', yaml: 'PyYAML', jinja2: 'Jinja2', werkzeug: 'Werkzeug',
+    uvicorn: 'uvicorn', gunicorn: 'gunicorn', fastapi: 'fastapi', flask: 'Flask', django: 'Django',
+    streamlit: 'streamlit', celery: 'celery', websockets: 'websockets', pydantic: 'pydantic'
 };
 
 const STDLIB = new Set([
@@ -51,7 +59,7 @@ function readText(file: string): string {
 
 function collectPythonFiles(root: string, maxFiles = 400): string[] {
     const result: string[] = [];
-    const ignored = new Set(['.git', '.venv', 'venv', '__pycache__', 'node_modules', '.tox', '.mypy_cache']);
+    const ignored = new Set(['.git', '.venv', 'venv', '__pycache__', 'node_modules', '.tox', '.mypy_cache', '.ruff_cache']);
     const walk = (dir: string) => {
         if (result.length >= maxFiles) return;
         let entries: fs.Dirent[];
@@ -129,6 +137,8 @@ export function analyzeProject(root: string): ProjectReport {
     const mapped = imports
         .filter(name => !STDLIB.has(name) && IMPORT_TO_PACKAGE[name])
         .map(name => IMPORT_TO_PACKAGE[name]);
+    // Bu alan, manifestte bulunmayan muhtemel paketleri gösterir. Gerçek kurulu
+    // durum prepare() içinde venv Python'u ile importlib üzerinden doğrulanır.
     const missing = [...new Set(mapped)].filter(pkg => !declared.has(pkg.toLowerCase().replace(/_/g, '-')));
     const framework = detectFramework(root);
     const hasVenv = fs.existsSync(path.join(root, '.venv')) || fs.existsSync(path.join(root, 'venv'));
@@ -142,7 +152,7 @@ export function analyzeProject(root: string): ProjectReport {
     if (!hasRequirements && !hasPyproject) findings.push({ severity: 'warning', title: 'Bağımlılık manifestosu yok', detail: 'requirements.txt veya pyproject.toml bulunamadı.', fix: 'Bağımlılıkları requirements.txt veya pyproject.toml ile sabitleyin.' });
     if (!hasGitignore) findings.push({ severity: 'warning', title: '.gitignore eksik', detail: 'Sanal ortam ve gizli dosyalar yanlışlıkla commit edilebilir.', fix: '.venv, __pycache__ ve .env ekleyin.' });
     if (fs.existsSync(path.join(root, '.env')) && !hasGitignore) findings.push({ severity: 'error', title: '.env Git riski', detail: '.env mevcut ve .gitignore yok.', fix: '.env dosyasını hemen .gitignore içine alın.' });
-    if (missing.length) findings.push({ severity: 'warning', title: 'Muhtemel eksik bağımlılıklar', detail: missing.join(', '), fix: 'Sanal ortamı aktifleştirip bu paketleri kurun.' });
+    if (missing.length) findings.push({ severity: 'warning', title: 'Muhtemel eksik bağımlılıklar', detail: missing.join(', '), fix: 'PyOtoBaşlat bunları sanal ortamda import testi ile doğrulayıp gerekirse otomatik kurar.' });
     if (keys.length) findings.push({ severity: 'info', title: 'Ortam değişkenleri tespit edildi', detail: `${keys.length} anahtar bulundu: ${keys.join(', ')}` });
     if (framework !== 'generic') findings.push({ severity: 'info', title: 'Framework algılandı', detail: framework.toUpperCase() });
     if (!files.length) findings.push({ severity: 'error', title: 'Python dosyası bulunamadı', detail: 'Açılan klasörde Python kaynak kodu bulunamadı.' });
