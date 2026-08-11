@@ -22,7 +22,7 @@ jobs:
       - name: 🟢 Node.js kur
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 📦 Bağımlılıkları kur
@@ -68,17 +68,31 @@ jobs:
 
       - name: 🧪 VSIX dosyasını doğrula
         run: |
+          set -euo pipefail
           VSIX=$(find . -maxdepth 1 -name '*.vsix' -print -quit)
           if [ -z "$VSIX" ]; then
             echo "❌ VSIX oluşturulamadı!"
             exit 1
           fi
           echo "✅ VSIX hazır: $VSIX"
-          npx @vscode/vsce ls --packagePath "$VSIX" > /tmp/vsix-list.txt
+
+          unzip -l "$VSIX" > /tmp/vsix-list.txt
           grep -q 'extension/package.json' /tmp/vsix-list.txt || {
             echo "❌ VSIX içinde package.json yok!"
             exit 1
           }
+          grep -q 'extension/out/projectDoctorExtension.js' /tmp/vsix-list.txt || {
+            echo "❌ VSIX içinde extension entrypoint yok!"
+            exit 1
+          }
+          grep -q 'extension/LICENSE' /tmp/vsix-list.txt || {
+            echo "❌ VSIX içinde LICENSE yok!"
+            exit 1
+          }
+
+          echo "📋 VSIX içeriği:"
+          cat /tmp/vsix-list.txt
+          echo "✅ VSIX içeriği doğrulandı."
 
       - name: 📤 VSIX artifact olarak yükle
         uses: actions/upload-artifact@v4
