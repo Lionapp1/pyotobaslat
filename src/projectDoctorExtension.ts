@@ -41,7 +41,7 @@ function launch(root: string): void {
     const framework = configured === 'otomatik' ? detectFramework(root) : configured;
     const file = entry(root, framework);
     if (!file) throw new Error('Çalıştırılacak Python dosyası bulunamadı.');
-    const interpreter = fs.existsSync(py(root)) ? py(root) : (process.platform === 'win32' ? 'python' : 'python3');
+    const interpreter = py(root);
     let command = `${interpreter} ${file}`;
     if (framework === 'django' && file === 'manage.py') command = `${interpreter} manage.py runserver`;
     else if (framework === 'fastapi') command = `${interpreter} -m uvicorn main:app --reload`;
@@ -52,8 +52,9 @@ function launch(root: string): void {
 }
 async function doctor(root: string): Promise<void> {
     const report = analyzeProject(root);
-    output.appendLine(formatReport(report)); output.show(true);
-    const doc = await vscode.workspace.openTextDocument({ content: formatReport(report), language: 'markdown' });
+    const markdown = formatReport(report);
+    output.appendLine(markdown); output.show(true);
+    const doc = await vscode.workspace.openTextDocument({ content: markdown, language: 'markdown' });
     await vscode.window.showTextDocument(doc, { preview: false });
 }
 async function prepare(root: string): Promise<void> {
@@ -126,7 +127,13 @@ export function activate(context: vscode.ExtensionContext): void {
     register('pyotobaslat.kodKalitesi', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); await quality(r); });
     register('pyotobaslat.testleriCalistir', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); await tests(r); });
     register('pyotobaslat.performansAnalizi', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); await performance(r); });
-    register('pyotobaslat.paketleriGuncelle', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); const report = analyzeProject(r); if (!report.missingLikelyPackages.length) return vscode.window.showInformationMessage('📦 Eksik paket bulunmadı.'); const p = pip(r); const args = p === 'python' || p === 'python3' ? ['-m', 'pip', 'install', ...report.missingLikelyPackages] : ['install', ...report.missingLikelyPackages]; await run(p, args, r); });
+    register('pyotobaslat.paketleriGuncelle', async () => {
+        const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.');
+        const report = analyzeProject(r);
+        if (!report.missingLikelyPackages.length) { vscode.window.showInformationMessage('📦 Eksik paket bulunmadı.'); return; }
+        const p = pip(r); const args = p === 'python' || p === 'python3' ? ['-m', 'pip', 'install', ...report.missingLikelyPackages] : ['install', ...report.missingLikelyPackages];
+        await run(p, args, r);
+    });
     register('pyotobaslat.ortamiTemizle', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); const target = path.join(r, '.venv'); if (!fs.existsSync(target)) return; const ok = await vscode.window.showWarningMessage('.venv silinecek.', 'Sil', 'İptal'); if (ok === 'Sil') fs.rmSync(target, { recursive: true, force: true }); });
     register('pyotobaslat.ayarlarAc', async () => { await vscode.commands.executeCommand('workbench.action.openSettings', '@ext:Lionapp1.pyotobaslat'); });
     register('pyotobaslat.hataIstatistikleri', async () => { const r = rootPath(); if (!r) throw new Error('Önce proje klasörü açın.'); await doctor(r); });
