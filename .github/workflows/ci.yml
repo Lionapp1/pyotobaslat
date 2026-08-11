@@ -1,10 +1,13 @@
-name: CI - Derle & Paketle
+name: CI - Derle, Sürümle & VSIX
 
 on:
   push:
     branches: [main]
   pull_request:
     branches: [main]
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -15,60 +18,108 @@ jobs:
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          token: ${{ secrets.GH_PAT }}
 
       - name: 🟢 Node.js kur
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           cache: 'npm'
 
       - name: 📦 Bağımlılıkları kur
         run: npm ci
 
-      - name: 🔢 Versiyonu otomatik artır (patch)
+      - name: 🔢 Main'de patch sürümünü otomatik artır
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        id: version
         run: |
           CURRENT=$(node -p "require('./package.json').version")
           echo "📌 Mevcut versiyon: $CURRENT"
 
-          NEW_VERSION=$(node -e "
-            const v = '$CURRENT'.split('.');
-            v[2] = parseInt(v[2]) + 1;
-            console.log(v.join('.'));
-          ")
+          npm version patch --no-git-tag-version
+          NEW_VERSION=$(node -p "require('./package.json').version")
           echo "🚀 Yeni versiyon: $NEW_VERSION"
-
-          node -e "
-            const fs = require('fs');
-            const pkg = JSON.parse(fs.readFileSync('package.json', 'utf8'));
-            pkg.version = '$NEW_VERSION';
-            fs.writeFileSync('package.json', JSON.stringify(pkg, null, 2) + '\n');
-          "
+          echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
           git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add package.json
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add package.json package-lock.json
           git commit -m "chore: bump version to $NEW_VERSION [skip ci]"
           git push
+          git tag "v$NEW_VERSION"
+          git push origin "v$NEW_VERSION"
 
-      - name: 🔨 Derle
+      - name: 🔨 TypeScript derle
         run: npm run compile
 
-      - name: 📋 Derleme çıktısını kontrol et
+      - name: 🔎 Extension giriş dosyasını doğrula
         run: |
-          if [ ! -f out/extension.js ]; then
-            echo "❌ out/extension.js bulunamadı! Derleme başarısız."
+          ENTRY=$(node -p "require('./package.json').main")
+          echo "📌 Extension entrypoint: $ENTRY"
+          if [ ! -f "$ENTRY" ]; then
+            echo "❌ $ENTRY bulunamadı!"
+            echo "Derlenen dosyalar:"
+            find out -maxdepth 2 -type f -print
             exit 1
           fi
-          echo "✅ Derleme başarılı"
+          echo "✅ Extension entrypoint hazır"
 
       - name: 📦 VSIX paketini oluştur
         run: npx @vscode/vsce package --allow-missing-repository
+
+      - name: 🧪 VSIX dosyasını doğrula
+        run: |
+          set -euo pipefail
+          VSIX=$(find . -maxdepth 1 -name '*.vsix' -print -quit)
+          if [ -z "$VSIX" ]; then
+            echo "❌ VSIX oluşturulamadı!"
+            exit 1
+          fi
+          echo "✅ VSIX hazır: $VSIX"
+
+          EXPECTED_VERSION=$(node -p "require('./package.json').version")
+          EXPECTED_VSIX="./pyotobaslat-${EXPECTED_VERSION}.vsix"
+          if [ "$VSIX" != "$EXPECTED_VSIX" ]; then
+            echo "❌ VSIX sürümü beklenenden farklı: $VSIX (beklenen $EXPECTED_VSIX)"
+            exit 1
+          fi
+
+          unzip -l "$VSIX" > /tmp/vsix-list.txt
+          grep -q 'extension/package.json' /tmp/vsix-list.txt || {
+            echo "❌ VSIX içinde package.json yok!"
+            exit 1
+          }
+          grep -q 'extension/out/projectDoctorExtension.js' /tmp/vsix-list.txt || {
+            echo "❌ VSIX içinde extension entrypoint yok!"
+            exit 1
+          }
+          grep -q 'extension/LICENSE' /tmp/vsix-list.txt || {
+            echo "❌ VSIX içinde LICENSE yok!"
+            exit 1
+          }
+
+          unzip -p "$VSIX" extension/package.json > /tmp/vsix-package.json
+          ACTUAL_VERSION=$(node -p "require('/tmp/vsix-package.json').version")
+          if [ "$ACTUAL_VERSION" != "$EXPECTED_VERSION" ]; then
+            echo "❌ VSIX package.json sürümü yanlış: $ACTUAL_VERSION (beklenen $EXPECTED_VERSION)"
+            exit 1
+          fi
+
+          echo "📋 VSIX içeriği doğrulandı: $VSIX"
+          echo "✅ VSIX sürümü: $ACTUAL_VERSION"
 
       - name: 📤 VSIX artifact olarak yükle
         uses: actions/upload-artifact@v4
         with:
           name: pyotobaslat-vsix
           path: "*.vsix"
-          retention-days: 7
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: 🚀 GitHub Release oluştur
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: PyOtoBaşlat v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: "*.vsix"
