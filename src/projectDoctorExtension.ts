@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
-import { analyzeProject, detectFramework, formatReport } from './projectDoctor';
+import { analyzeProject, detectFramework, formatReport, IMPORT_TO_PACKAGE } from './projectDoctor';
 
 let output: vscode.OutputChannel;
 function rootPath(): string | undefined { return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath; }
@@ -13,8 +13,8 @@ function pythonPath(root: string): string {
 }
 function run(command: string, args: string[], cwd: string, timeout = 180000): Promise<string> {
     return new Promise((resolve, reject) => execFile(command, args, { cwd, timeout, maxBuffer: 8 * 1024 * 1024 }, (error, stdout, stderr) => {
-        const text = (stdout || stderr || error?.message || '').trim();
-        if (error) reject(new Error(text)); else resolve(text);
+        const text = `${stdout || ''}\n${stderr || ''}`.trim();
+        if (error) reject(new Error(text || error.message)); else resolve(text);
     }));
 }
 function ensureGitignore(root: string): void {
@@ -27,38 +27,34 @@ function entry(root: string, framework: string): string | undefined {
     for (const name of ['main.py', 'app.py', 'run.py']) if (fs.existsSync(path.join(root, name))) return name;
     try { return fs.readdirSync(root).find(x => x.endsWith('.py')); } catch { return undefined; }
 }
-const IMPORT_TO_PACKAGE: Record<string, string> = {
-    cv2: 'opencv-python', PIL: 'Pillow', sklearn: 'scikit-learn', yaml: 'PyYAML', dotenv: 'python-dotenv', bs4: 'beautifulsoup4',
-    rest_framework: 'djangorestframework', django_filters: 'django-filter', flask_cors: 'flask-cors', flask_sqlalchemy: 'flask-sqlalchemy',
-    jwt: 'PyJWT', jose: 'python-jose', serial: 'pyserial', fitz: 'PyMuPDF', docx: 'python-docx', psycopg2: 'psycopg2-binary',
-    requests: 'requests', httpx: 'httpx', aiohttp: 'aiohttp', sqlalchemy: 'SQLAlchemy', pymongo: 'pymongo', redis: 'redis', openai: 'openai',
-    anthropic: 'anthropic', transformers: 'transformers', torch: 'torch', pandas: 'pandas', numpy: 'numpy', matplotlib: 'matplotlib',
-    plotly: 'plotly', pytest: 'pytest', rich: 'rich', psutil: 'psutil', PySide6: 'PySide6', PyQt6: 'PyQt6', PyQt5: 'PyQt5',
-    lxml: 'lxml', magic: 'python-magic', bcrypt: 'bcrypt', cryptography: 'cryptography', jinja2: 'Jinja2', werkzeug: 'Werkzeug',
-    uvicorn: 'uvicorn', gunicorn: 'gunicorn', fastapi: 'fastapi', flask: 'Flask', django: 'Django', streamlit: 'streamlit',
-    celery: 'celery', websockets: 'websockets', pydantic: 'pydantic'
-};
-function packageForImport(name: string): string | undefined { return IMPORT_TO_PACKAGE[name] || (name && /^[A-Za-z][A-Za-z0-9_-]*$/.test(name) ? name : undefined); }
 async function findMissingImports(root: string, imports: string[]): Promise<string[]> {
-    const candidates = [...new Set(imports.filter(name => IMPORT_TO_PACKAGE[name]))]; if (!candidates.length) return [];
-    const script = ['import importlib.util,sys','missing=[]','for name in sys.argv[1:]:','    try:','        if importlib.util.find_spec(name) is None: missing.append(name)','    except (ImportError,ModuleNotFoundError,ValueError): missing.append(name)','print("\\n".join(missing))'].join('; ');
-    try { const result = await run(pythonPath(root), ['-c', script, ...candidates], root); return result.split(/\r?\n/).map(x => x.trim()).filter(Boolean); }
+    const candidates = [...new Set(imports.filter(name => Boolean(IMPORT_TO_PACKAGE[name])))];
+    if (!candidates.length) return [];
+    const script = [
+        'import importlib.util', 'import sys', 'missing = []', 'for name in sys.argv[1:]:',
+        '    try:', '        if importlib.util.find_spec(name) is None:', '            missing.append(name)',
+        '    except (ImportError, ModuleNotFoundError, ValueError):', '        missing.append(name)',
+        'print("\\n".join(missing))'
+    ].join('\n');
+    try { const result = await run(pythonPath(root), ['-c', script, ...candidates], root, 30000); return result.split(/\r?\n/).map(x => x.trim()).filter(Boolean); }
     catch (e: any) { output.appendLine(`⚠️ Import kontrolü başarısız: ${e.message}`); return candidates; }
 }
-async function repairPackages(root: string, imports: string[], progress?: vscode.Progress<{ message?: string; increment?: number }>): Promise<void> {
-    const missingImports = await findMissingImports(root, imports); const packages = [...new Set(missingImports.map(packageForImport).filter(Boolean))] as string[]; if (!packages.length) return;
-    const python = pythonPath(root); output.appendLine(`📦 Eksik modüller: ${missingImports.join(', ')}`); output.appendLine(`📦 Kurulacak: ${packages.join(', ')}`); progress?.report({ message: `${packages.join(', ')} kuruluyor...` });
-    await run(python, ['-m', 'pip', 'install', '--disable-pip-version-check', ...packages], root, 600000);
+async function installPackages(root: string, packages: string[], progress?: vscode.Progress<{ message?: string }>): Promise<void> {
+    const unique = [...new Set(packages)]; if (!unique.length) return;
+    progress?.report({ message: `${unique.join(', ')} kuruluyor...` }); output.appendLine(`📦 Kuruluyor: ${unique.join(', ')}`);
+    await run(pythonPath(root), ['-m', 'pip', 'install', '--disable-pip-version-check', ...unique], root, 600000);
+}
+async function repairPackages(root: string, imports: string[], progress?: vscode.Progress<{ message?: string }>): Promise<void> {
+    const missingImports = await findMissingImports(root, imports); const packages = [...new Set(missingImports.map(name => IMPORT_TO_PACKAGE[name]).filter(Boolean))] as string[];
+    if (!packages.length) return; output.appendLine(`📦 Eksik modüller: ${missingImports.join(', ')}`); await installPackages(root, packages, progress);
     const stillMissing = await findMissingImports(root, missingImports); if (stillMissing.length) throw new Error(`Kurulumdan sonra hâlâ eksik: ${stillMissing.join(', ')}`);
 }
+function extractMissingModules(errorText: string): string[] { return [...new Set([...errorText.matchAll(/ModuleNotFoundError:\s+No module named ['\"]([^'\"]+)['\"]/g)].map(m => m[1].split('.')[0]))]; }
 async function repairRuntimeError(root: string, errorText: string, progress?: vscode.Progress<{ message?: string }>): Promise<boolean> {
-    const matches = [...errorText.matchAll(/ModuleNotFoundError:\s+No module named ['\"]([^'\"]+)['\"]/g)];
-    if (!matches.length) return false;
-    const imports = [...new Set(matches.map(m => m[1].split('.')[0]))]; const packages = imports.map(packageForImport).filter(Boolean) as string[];
-    if (!packages.length) { output.appendLine(`⚠️ Eksik modül bulundu ancak güvenli PyPI eşlemesi yok: ${imports.join(', ')}`); return false; }
-    const python = pythonPath(root); progress?.report({ message: `${packages.join(', ')} eksik; otomatik kuruluyor...` });
-    output.appendLine(`🔧 Çalışma sırasında eksik modül: ${imports.join(', ')}`); output.appendLine(`📦 Otomatik kuruluyor: ${packages.join(', ')}`);
-    try { await run(python, ['-m', 'pip', 'install', '--disable-pip-version-check', ...new Set(packages)], root, 600000); output.appendLine('✅ Çalışma zamanı eksik modül onarıldı.'); return true; }
+    const imports = extractMissingModules(errorText); if (!imports.length) return false;
+    const packages = [...new Set(imports.map(name => IMPORT_TO_PACKAGE[name]).filter(Boolean))] as string[];
+    if (!packages.length) { output.appendLine(`⚠️ Güvenli PyPI eşleşmesi yok: ${imports.join(', ')}`); return false; }
+    try { await installPackages(root, packages, progress); const stillMissing = await findMissingImports(root, imports); if (stillMissing.length) return false; output.appendLine('✅ Çalışma zamanı eksik modül onarıldı.'); return true; }
     catch (e: any) { output.appendLine(`❌ Otomatik kurulum başarısız: ${e.message}`); return false; }
 }
 function launchCommand(root: string, framework: string, file: string): { command: string; args: string[] } {
@@ -71,17 +67,9 @@ function launchCommand(root: string, framework: string, file: string): { command
 }
 async function launch(root: string): Promise<void> {
     const configured = vscode.workspace.getConfiguration('pyotobaslat').get<string>('calistirmaModu', 'otomatik'); const framework = configured === 'otomatik' ? detectFramework(root) : configured;
-    const file = entry(root, framework); if (!file) throw new Error('Çalıştırılacak Python dosyası bulunamadı.');
-    const spec = launchCommand(root, framework, file); const term = vscode.window.terminals.find(t => t.name === '🐍 PyOtoBaşlat') || vscode.window.createTerminal('🐍 PyOtoBaşlat');
-    term.sendText(`${[spec.command, ...spec.args].map(x => /\s/.test(x) ? JSON.stringify(x) : x).join(' ')}`); term.show();
-}
-async function runAndRepair(root: string, framework: string, file: string, progress?: vscode.Progress<{ message?: string }>): Promise<void> {
-    const spec = launchCommand(root, framework, file);
-    try { await run(spec.command, spec.args, root, 45000); }
-    catch (e: any) {
-        const repaired = await repairRuntimeError(root, e.message, progress); if (!repaired) throw e;
-        await run(spec.command, spec.args, root, 45000);
-    }
+    const file = entry(root, framework); if (!file) throw new Error('Çalıştırılacak Python dosyası bulunamadı.'); const spec = launchCommand(root, framework, file);
+    const term = vscode.window.terminals.find(t => t.name === '🐍 PyOtoBaşlat') || vscode.window.createTerminal('🐍 PyOtoBaşlat');
+    term.sendText([spec.command, ...spec.args].map(x => /\s/.test(x) ? JSON.stringify(x) : x).join(' ')); term.show();
 }
 async function doctor(root: string): Promise<void> { const report = analyzeProject(root); const markdown = formatReport(report); output.appendLine(markdown); output.show(true); const doc = await vscode.workspace.openTextDocument({ content: markdown, language: 'markdown' }); await vscode.window.showTextDocument(doc, { preview: false }); }
 async function prepare(root: string): Promise<void> {
@@ -91,8 +79,6 @@ async function prepare(root: string): Promise<void> {
         ensureGitignore(root); const python = pythonPath(root);
         if (cfg.get('otomatikKurulum', true) && fs.existsSync(path.join(root, 'requirements.txt'))) { progress.report({ message: 'requirements.txt kuruluyor...' }); try { await run(python, ['-m', 'pip', 'install', '-r', 'requirements.txt'], root, 600000); } catch (e: any) { output.appendLine(`⚠️ requirements.txt kurulumu tamamlanamadı: ${e.message}`); vscode.window.showWarningMessage('requirements.txt içinde hata var; eksik importlar otomatik onarılacak.'); } }
         if (cfg.get('otomatikPaketKontrol', true)) { const report = analyzeProject(root); await repairPackages(root, report.imports, progress); }
-        const framework = cfg.get<string>('calistirmaModu', 'otomatik') === 'otomatik' ? detectFramework(root) : cfg.get<string>('calistirmaModu', 'otomatik'); const file = entry(root, framework); if (!file) throw new Error('Çalıştırılacak Python dosyası bulunamadı.');
-        try { await runAndRepair(root, framework, file, progress); } catch (e: any) { output.appendLine(`⚠️ Ön çalıştırma: ${e.message}`); }
     });
     await launch(root);
 }
