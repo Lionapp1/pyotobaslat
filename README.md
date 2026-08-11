@@ -15,29 +15,21 @@ Python projelerini tek tuşla otomatik kurar, venv oluşturur, hataları Türkç
 - 🧪 **Test Çalıştırıcı** — pytest veya unittest
 - ✨ **Kod Kalitesi** — Ruff, Flake8 veya Pylint
 
+## 📦 Sürüm sistemi
+
+Pull request Actions çalışmaları sürüm artırmaz; bunlar yalnızca doğrulama build'leridir. Gerçek sürümleme `main` dalına geçişte yapılır.
+
+`main` build'i `npm version patch` ile sürümü artırır. `package.json` ve `package-lock.json` birlikte güncellenir, ardından aynı sürümle VSIX oluşturulur. CI VSIX dosya adını ve VSIX içindeki `extension/package.json` sürümünü karşılaştırır.
+
+Başarılı bir `main` build'i ayrıca `vX.Y.Z` Git tag'i ve GitHub Release oluşturur ve VSIX'i release'e ekler.
+
+Örneğin: `2.1.5` → `2.1.6` → `pyotobaslat-2.1.6.vsix`.
+
 ## 🚀 Kurulum
 
 1. VS Code Eklentiler panelinde "PyOtoBaşlat" arayın
 2. Kurun ve bir Python klasörü açın
 3. F5'e basın veya PyOtoBaşlat komutlarını kullanın
-
-## 📦 Sürüm ve VSIX
-
-`main` dalına yapılan yayınlanabilir değişikliklerde CI patch sürümünü otomatik artırır. Örneğin `2.1.5` → `2.1.6`.
-
-CI aynı sürümü üç yerde doğrular:
-
-- `package.json`
-- VSIX dosya adı
-- VSIX içindeki `extension/package.json`
-
-Başarılı `main` build'i ayrıca `vX.Y.Z` Git tag'i ve GitHub Release oluşturur; VSIX Release'e eklenir.
-
-Pull request build'leri sürüm artırmaz. PR artifact'ı yalnızca doğrulama amaçlıdır; gerçek sürüm `main` yayınında üretilir.
-
-## ⚙️ Ayarlar
-
-VS Code ayarlarından `PyOtoBaşlat` araması yaparak tüm seçenekleri özelleştirebilirsiniz.
 
 ## 📋 Gereksinimler
 
