@@ -19,11 +19,11 @@ Python projelerini tek tuşla otomatik kurar, venv oluşturur, hataları Türkç
 
 Pull request Actions çalışmaları sürüm artırmaz; bunlar yalnızca doğrulama build'leridir. Gerçek sürümleme `main` dalına geçişte yapılır.
 
-`main` build'i `npm version patch` ile sürümü artırır. `package.json` ve `package-lock.json` birlikte güncellenir, ardından aynı sürümle VSIX oluşturulur. CI VSIX dosya adını ve VSIX içindeki `extension/package.json` sürümünü karşılaştırır.
+`main` build'i patch sürümünü artırır. `package.json` ve `package-lock.json` birlikte güncellenir. Aynı sürümle VSIX oluşturulur ve CI, VSIX dosya adını ve içindeki `extension/package.json` sürümünü doğrular.
 
-Başarılı bir `main` build'i ayrıca `vX.Y.Z` Git tag'i ve GitHub Release oluşturur ve VSIX'i release'e ekler.
+Başarılı bir `main` build'i `vX.Y.Z` Git tag'i ve GitHub Release oluşturur; VSIX release'e eklenir.
 
-Örneğin: `2.1.5` → `2.1.6` → `pyotobaslat-2.1.6.vsix`.
+Örnek: `2.1.5` → `2.1.6` → `pyotobaslat-2.1.6.vsix`.
 
 ## 🚀 Kurulum
 
