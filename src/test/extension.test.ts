@@ -9,6 +9,7 @@ test('activate tüm komutları kaydeder', t => {
     const vscodeMock: any = {
         workspace: {
             workspaceFolders: undefined,
+            textDocuments: [],
             getConfiguration: () => ({ get: (_key: string, fallback: unknown) => fallback, update: async () => undefined }),
             onDidChangeWorkspaceFolders: () => ({ dispose() { /* noop */ } }),
             onDidSaveTextDocument: () => ({ dispose() { /* noop */ } }),
@@ -70,5 +71,5 @@ test('activate tüm komutları kaydeder', t => {
     ];
     assert.equal(registered.size, expected.length);
     for (const id of expected) { assert.ok(registered.has(id), `${id} kaydedilmedi`); }
-    assert.equal(context.subscriptions.length, expected.length + 4); // output, status ve iki olay dinleyicisi
+    assert.equal(context.subscriptions.length, expected.length + 5); // output, status, iki olay dinleyicisi ve zamanlayıcı
 });

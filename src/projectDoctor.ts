@@ -57,13 +57,21 @@ export function collectPythonFiles(root: string, maxFiles = 400): string[] {
 
 export function detectImports(files: string[]): string[] {
     const imports = new Set<string>();
-    const pattern = /^\s*(?:from\s+([A-Za-z_][\w.]*)\s+import|import\s+([A-Za-z_][\w.]*))/gm;
+    const fromPattern = /^\s*from\s+([A-Za-z_][\w.]*)\s+import\b/gm;
+    const importPattern = /^\s*import\s+([^\n#]+)/gm;
+    const add = (name: string): void => {
+        const rootName = name.split('.')[0];
+        if (!STDLIB_MODULES.has(rootName)) { imports.add(rootName); }
+    };
     for (const file of files) {
         const text = readText(file);
         let match: RegExpExecArray | null;
-        while ((match = pattern.exec(text)) !== null) {
-            const rootName = (match[1] || match[2]).split('.')[0];
-            if (!STDLIB_MODULES.has(rootName)) { imports.add(rootName); }
+        while ((match = fromPattern.exec(text)) !== null) { add(match[1]); }
+        while ((match = importPattern.exec(text)) !== null) {
+            for (const part of match[1].split(',')) {
+                const name = part.trim().match(/^([A-Za-z_][\w.]*)/)?.[1];
+                if (name) { add(name); }
+            }
         }
     }
     return [...imports].sort();

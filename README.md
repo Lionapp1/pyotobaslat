@@ -33,8 +33,9 @@ PyOtoBaşlat her Python dosyasını rastgele değiştirmez:
 4. Ruff `--fix` ile güvenli düzeltmeler uygulanır.
 5. `python -m compileall` ile syntax tekrar doğrulanır.
 6. Bir kurulum hatası oluşursa güvenli eşleşme varsa onarım yapılıp işlem tekrarlanır.
+7. Kaydedilmemiş Python dosyaları varsa düzeltme öncesi sorulur; dosyalar kaydedilip devam edilebilir.
 
-Proje içindeki yerel modüller PyPI'a gönderilmez. Tüm süreçler `execFile` ile, kabuk yorumlaması olmadan çalıştırılır.
+Proje içindeki yerel modüller PyPI'a gönderilmez. Tüm süreçler `execFile` ile, kabuk yorumlaması olmadan çalıştırılır. FastAPI ve Flask için modül adı giriş dosyasından türetilir (`api.py` → `api:app`).
 
 ## Kurulum
 

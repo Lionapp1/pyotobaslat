@@ -47,6 +47,19 @@ test('detectImports girintili importları bulur, standart kütüphaneyi ayıklar
     assert.ok(!imports.includes('pathlib'));
 });
 
+test('detectImports çoklu import, alias ve göreli importları doğru işler', t => {
+    const root = tempProject(t);
+    const file = path.join(root, 'main.py');
+    fs.writeFileSync(file, [
+        'import os, requests, numpy as np',
+        'from . import yerel',
+        'from ..paket import seviye',
+        'import cv2.imread as reader',
+        'from PIL import Image'
+    ].join('\n'));
+    assert.deepEqual(detectImports([file]), ['PIL', 'cv2', 'numpy', 'requests']);
+});
+
 test('declaredPackages requirements ve pyproject satırlarını normalize eder', t => {
     const root = tempProject(t);
     fs.writeFileSync(path.join(root, 'requirements.txt'), [

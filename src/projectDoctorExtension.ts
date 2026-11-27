@@ -32,12 +32,40 @@ function config(): vscode.WorkspaceConfiguration {
 
 function entryFile(root: string, framework: Framework): string | undefined {
     if (framework === 'django' && fs.existsSync(path.join(root, 'manage.py'))) { return 'manage.py'; }
-    for (const name of ['main.py', 'app.py', 'run.py']) {
-        if (fs.existsSync(path.join(root, name))) { return name; }
-    }
+    let pythonFiles: string[] = [];
     try {
-        return fs.readdirSync(root).find(name => name.endsWith('.py') && name !== 'manage.py');
+        pythonFiles = fs.readdirSync(root)
+            .filter(name => name.endsWith('.py') && name !== 'manage.py')
+            .sort();
     } catch { return undefined; }
+    if (framework === 'fastapi') {
+        const fastapiFile = pythonFiles.find(name => {
+            try {
+                return /FastAPI\s*\(|from\s+fastapi\s+import/.test(fs.readFileSync(path.join(root, name), 'utf8'));
+            } catch { return false; }
+        });
+        if (fastapiFile) { return fastapiFile; }
+    }
+    for (const name of ['main.py', 'app.py', 'run.py']) {
+        if (pythonFiles.includes(name)) { return name; }
+    }
+    return pythonFiles[0];
+}
+
+async function confirmNoDirtyFiles(): Promise<boolean> {
+    const dirty = vscode.workspace.textDocuments.filter(
+        document => document.isDirty && document.languageId === 'python'
+    );
+    if (dirty.length === 0) { return true; }
+    const choice = await vscode.window.showWarningMessage(
+        `${dirty.length} Python dosyasında kaydedilmemiş değişiklik var. Otomatik düzeltme bu dosyaları da değiştirebilir.`,
+        'Kaydedip devam et', 'Yine de düzelt', 'İptal'
+    );
+    if (choice === 'Kaydedip devam et') {
+        await Promise.all(dirty.map(document => document.save()));
+        return true;
+    }
+    return choice === 'Yine de düzelt';
 }
 
 async function selectInterpreter(root: string, python: string): Promise<void> {
@@ -247,7 +275,11 @@ async function prepare(
 
     const report = analyzeProject(root);
     if (cfg.get<boolean>('envSihirbaziAktif', true)) { await envWizard(root, report.envKeys); }
-    if (cfg.get<boolean>('selfHealingAktif', true)) { await autoFix(root, progress); }
+    if (cfg.get<boolean>('selfHealingAktif', true) && await confirmNoDirtyFiles()) {
+        await autoFix(root, progress);
+    } else if (cfg.get<boolean>('selfHealingAktif', true)) {
+        log('Kaydedilmemiş dosyalar nedeniyle otomatik düzeltme atlandı.', 'WARN');
+    }
 }
 
 async function launch(root: string): Promise<void> {
@@ -452,9 +484,15 @@ export function activate(context: vscode.ExtensionContext): void {
         status.show();
     };
     refreshStatus();
+    let refreshTimer: ReturnType<typeof setTimeout> | undefined;
+    const scheduleRefresh = (): void => {
+        if (refreshTimer) { clearTimeout(refreshTimer); }
+        refreshTimer = setTimeout(() => { refreshTimer = undefined; refreshStatus(); }, 400);
+    };
     context.subscriptions.push(
         vscode.workspace.onDidChangeWorkspaceFolders(refreshStatus),
-        vscode.workspace.onDidSaveTextDocument(refreshStatus)
+        vscode.workspace.onDidSaveTextDocument(scheduleRefresh),
+        { dispose: () => { if (refreshTimer) { clearTimeout(refreshTimer); } } }
     );
 
     const register = (id: string, action: () => Promise<void>): void => {
@@ -478,6 +516,7 @@ export function activate(context: vscode.ExtensionContext): void {
         await launch(root);
     });
     register('pyotobaslat.koduDuzelt', async () => {
+        if (!await confirmNoDirtyFiles()) { return; }
         await vscode.window.withProgress({ location: vscode.ProgressLocation.Notification, title: '✨ Güvenli düzeltme' }, async progress => {
             await autoFix(requireRoot(), progress);
         });

@@ -119,10 +119,11 @@ export function quoteTerminalArg(arg: string): string {
 
 export function launchSpec(root: string, framework: Framework, file: string, python?: string): string {
     const interpreter = python || venvPython(root);
+    const moduleName = path.basename(file, '.py');
     const args: string[] = [];
     if (framework === 'django' && file === 'manage.py') { args.push('manage.py', 'runserver'); }
-    else if (framework === 'fastapi') { args.push('-m', 'uvicorn', 'main:app', '--reload'); }
-    else if (framework === 'flask') { args.push('-m', 'flask', 'run'); }
+    else if (framework === 'fastapi') { args.push('-m', 'uvicorn', `${moduleName}:app`, '--reload'); }
+    else if (framework === 'flask') { args.push('-m', 'flask', '--app', moduleName, 'run'); }
     else if (framework === 'streamlit') { args.push('-m', 'streamlit', 'run', file); }
     else { args.push(file); }
     return [interpreter, ...args].map(quoteTerminalArg).join(' ');

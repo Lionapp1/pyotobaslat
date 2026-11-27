@@ -11,6 +11,13 @@
 - Eksik paket onarımı yalnızca eşleştirme listesindeki paketleri kuruyor; bilinmeyen modüller PyPI'a gönderilmiyor.
 - Sanal ortam yoksa global Python'a paket kurulması engellendi.
 
+### Düzeltmeler (ikinci tur)
+- Import taraması `import a, b as c` ve `from x import y` biçimlerini doğru işliyor; göreli importlar atlanıyor.
+- FastAPI/Flask başlatma komutu artık dosya adından modül üretiyor (`api.py` → `api:app`, `--app app`).
+- FastAPI giriş dosyası içerikten algılanıyor; dosya listesi deterministik sıralanıyor.
+- Kaydedilmemiş Python dosyaları varken otomatik düzeltme kullanıcıya soruluyor; istenirse dosyalar kaydedilip düzeltme yapılıyor.
+- Durum çubuğu taraması 400 ms geciktiriliyor; her tuş vuruşunda tüm proje taranmıyor.
+
 ### Değişiklikler
 - Tüm komutlar `execFile` ile kabuk yorumlaması olmadan çalıştırılıyor; özel pip kaynağı http/https ile sınırlanıyor.
 - VS Code varsayılanlarıyla çakışan `F5`, `Ctrl+Shift+S/T/H/F5` kısayolları kaldırıldı; `Ctrl+Alt+R` ve `Ctrl+Alt+D` eklendi.
