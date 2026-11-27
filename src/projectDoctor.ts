@@ -12,10 +12,19 @@ export interface DoctorFinding {
     fix?: string;
 }
 
+// Gerçek Python yorumlayıcısı ile AST üzerinden elde edilen bilgiler.
+export interface AstProjectInfo {
+    imports: string[];
+    envKeys: string[];
+    framework: Framework;
+    appName?: string;
+}
+
 export interface ProjectReport {
     root: string;
     pythonFiles: number;
     framework: Framework;
+    appName?: string;
     hasVenv: boolean;
     hasRequirements: boolean;
     hasPyproject: boolean;
@@ -121,9 +130,9 @@ export function detectFramework(root: string): Framework {
     return 'generic';
 }
 
-export function analyzeProject(root: string): ProjectReport {
+export function analyzeProject(root: string, info?: AstProjectInfo): ProjectReport {
     const files = collectPythonFiles(root);
-    const imports = detectImports(files);
+    const imports = info ? info.imports : detectImports(files);
     const declared = declaredPackages(root);
     const mapped = imports
         .filter(name => Boolean(IMPORT_TO_PACKAGE[name]))
@@ -131,12 +140,12 @@ export function analyzeProject(root: string): ProjectReport {
     const missing = [...new Set(mapped)]
         .filter(pkg => !declared.has(normalizePackageName(pkg)))
         .sort();
-    const framework = detectFramework(root);
+    const framework = info ? info.framework : detectFramework(root);
     const hasVenv = fs.existsSync(path.join(root, '.venv')) || fs.existsSync(path.join(root, 'venv'));
     const hasRequirements = fs.existsSync(path.join(root, 'requirements.txt'));
     const hasPyproject = fs.existsSync(path.join(root, 'pyproject.toml'));
     const hasGitignore = fs.existsSync(path.join(root, '.gitignore'));
-    const keys = envKeys(root);
+    const keys = info ? info.envKeys : envKeys(root);
     const findings: DoctorFinding[] = [];
 
     if (files.length === 0) {
@@ -165,7 +174,7 @@ export function analyzeProject(root: string): ProjectReport {
     }
 
     return {
-        root, pythonFiles: files.length, framework, hasVenv, hasRequirements,
+        root, pythonFiles: files.length, framework, appName: info?.appName, hasVenv, hasRequirements,
         hasPyproject, hasGitignore, envKeys: keys, imports,
         declaredPackages: [...declared].sort(), missingLikelyPackages: missing, findings
     };
@@ -178,6 +187,7 @@ export function formatReport(report: ProjectReport): string {
         '',
         `**Proje:** ${report.root}`,
         `**Framework:** ${report.framework}`,
+        ...(report.appName ? [`**Uygulama nesnesi:** ${report.appName}`] : []),
         `**Python dosyası:** ${report.pythonFiles}`,
         `**Sanal ortam:** ${report.hasVenv ? '✅' : '❌'}`,
         `**Bağımlılık dosyası:** ${report.hasRequirements || report.hasPyproject ? '✅' : '❌'}`,

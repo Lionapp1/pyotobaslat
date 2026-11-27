@@ -2,8 +2,8 @@ import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import type { Framework } from './projectDoctor';
-import { safePackageName } from './packageMap';
+import type { AstProjectInfo, Framework } from './projectDoctor';
+import { safePackageName, STDLIB_MODULES } from './packageMap';
 
 export function run(command: string, args: string[], cwd: string, timeout = 300000): Promise<string> {
     return new Promise((resolve, reject) => {
@@ -12,6 +12,101 @@ export function run(command: string, args: string[], cwd: string, timeout = 3000
             if (error) { reject(new Error(output || error.message)); } else { resolve(output); }
         });
     });
+}
+
+// Gerçek Python AST'si üzerinden import / ortam değişkeni / framework analizi.
+// Kaynak koddaki yorumlar ve multiline string'ler yanlış pozitif üretmez.
+const INSPECT_SCRIPT = [
+    'import ast, json, os, sys',
+    'root = sys.argv[1]',
+    'ignore = {".git", ".venv", "venv", "env", "ENV", "__pycache__", "node_modules", ".tox", ".nox", ".mypy_cache", ".ruff_cache", ".pytest_cache", "build", "dist"}',
+    'imports = set()',
+    'env_keys = set()',
+    'framework = "django" if os.path.exists(os.path.join(root, "manage.py")) else "generic"',
+    'app_name = None',
+    'def text(node):',
+    '    return node.value if isinstance(node, ast.Constant) and isinstance(node.value, str) else None',
+    'def call_name(node):',
+    '    if not isinstance(node, ast.Call):',
+    '        return ""',
+    '    func = node.func',
+    '    if isinstance(func, ast.Name):',
+    '        return func.id',
+    '    return func.attr if isinstance(func, ast.Attribute) else ""',
+    'files = 0',
+    'for dirpath, dirnames, filenames in os.walk(root):',
+    '    dirnames[:] = [d for d in dirnames if d not in ignore]',
+    '    for filename in filenames:',
+    '        if not filename.endswith(".py") or files >= 400:',
+    '            continue',
+    '        files += 1',
+    '        full = os.path.join(dirpath, filename)',
+    '        try:',
+    '            with open(full, encoding="utf-8", errors="replace") as handle:',
+    '                tree = ast.parse(handle.read(), filename=full)',
+    '        except Exception:',
+    '            continue',
+    '        for node in ast.walk(tree):',
+    '            if isinstance(node, ast.Import):',
+    '                for alias in node.names:',
+    '                    imports.add(alias.name.split(".")[0])',
+    '            elif isinstance(node, ast.ImportFrom):',
+    '                if node.level == 0 and node.module:',
+    '                    top = node.module.split(".")[0]',
+    '                    imports.add(top)',
+    '                    if framework == "generic" and top == "fastapi":',
+    '                        framework = "fastapi"',
+    '                    elif framework == "generic" and top == "flask":',
+    '                        framework = "flask"',
+    '                    elif framework == "generic" and top == "streamlit":',
+    '                        framework = "streamlit"',
+    '            elif isinstance(node, ast.Assign) and call_name(node.value) in ("FastAPI", "Flask"):',
+    '                name = call_name(node.value)',
+    '                if framework == "generic":',
+    '                    framework = "fastapi" if name == "FastAPI" else "flask"',
+    '                if app_name is None:',
+    '                    for target in node.targets:',
+    '                        if isinstance(target, ast.Name):',
+    '                            app_name = target.id',
+    '                            break',
+    '            elif isinstance(node, ast.Call):',
+    '                name = call_name(node)',
+    '                if framework == "generic" and name == "FastAPI":',
+    '                    framework = "fastapi"',
+    '                elif framework == "generic" and name == "Flask":',
+    '                    framework = "flask"',
+    '                func = node.func',
+    '                key = None',
+    '                if isinstance(func, ast.Attribute):',
+    '                    owner = func.value',
+    '                    if func.attr == "getenv" and isinstance(owner, ast.Name) and owner.id == "os" and node.args:',
+    '                        key = text(node.args[0])',
+    '                    elif func.attr == "get" and isinstance(owner, ast.Attribute) and owner.attr == "environ" and isinstance(owner.value, ast.Name) and owner.value.id == "os" and node.args:',
+    '                        key = text(node.args[0])',
+    '                if key and key.isupper():',
+    '                    env_keys.add(key)',
+    '            elif isinstance(node, ast.Subscript):',
+    '                value = node.value',
+    '                if isinstance(value, ast.Attribute) and value.attr == "environ" and isinstance(value.value, ast.Name) and value.value.id == "os":',
+    '                    slice_node = node.slice.value if isinstance(node.slice, ast.Index) else node.slice',
+    '                    key = text(slice_node)',
+    '                    if key and key.isupper():',
+    '                        env_keys.add(key)',
+    'print(json.dumps({"imports": sorted(imports), "envKeys": sorted(env_keys), "framework": framework, "appName": app_name}))'
+].join('\n');
+
+export async function inspectProjectWithPython(root: string, python: string): Promise<AstProjectInfo> {
+    const raw = await run(python, ['-c', INSPECT_SCRIPT, root], root, 60000);
+    const line = raw.trim().split(/\r?\n/).pop() || '{}';
+    const data = JSON.parse(line) as {
+        imports?: string[]; envKeys?: string[]; framework?: Framework; appName?: string | null;
+    };
+    return {
+        imports: (data.imports || []).filter(name => !STDLIB_MODULES.has(name)).sort(),
+        envKeys: data.envKeys || [],
+        framework: data.framework || 'generic',
+        appName: data.appName || undefined
+    };
 }
 
 export function systemPython(): string {
@@ -117,13 +212,22 @@ export function quoteTerminalArg(arg: string): string {
         : `'${arg.replace(/'/g, `'\\''`)}'`;
 }
 
-export function launchSpec(root: string, framework: Framework, file: string, python?: string): string {
+export function launchSpec(
+    root: string,
+    framework: Framework,
+    file: string,
+    python?: string,
+    appName?: string
+): string {
     const interpreter = python || venvPython(root);
     const moduleName = path.basename(file, '.py');
     const args: string[] = [];
     if (framework === 'django' && file === 'manage.py') { args.push('manage.py', 'runserver'); }
-    else if (framework === 'fastapi') { args.push('-m', 'uvicorn', `${moduleName}:app`, '--reload'); }
-    else if (framework === 'flask') { args.push('-m', 'flask', '--app', moduleName, 'run'); }
+    else if (framework === 'fastapi') { args.push('-m', 'uvicorn', `${moduleName}:${appName || 'app'}`, '--reload'); }
+    else if (framework === 'flask') {
+        const target = appName && appName !== 'app' ? `${moduleName}:${appName}` : moduleName;
+        args.push('-m', 'flask', '--app', target, 'run');
+    }
     else if (framework === 'streamlit') { args.push('-m', 'streamlit', 'run', file); }
     else { args.push(file); }
     return [interpreter, ...args].map(quoteTerminalArg).join(' ');
