@@ -1,4 +1,4 @@
-name: CI - Derle, Sürümle & VSIX
+name: CI - Doğrula, Sürümle & VSIX
 
 on:
   push:
@@ -7,12 +7,46 @@ on:
     branches: [main]
 
 permissions:
-  contents: write
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
-  build:
+  verify:
+    name: Derle ve test et
     runs-on: ubuntu-latest
+    steps:
+      - name: 📥 Repo'yu klonla
+        uses: actions/checkout@v4
 
+      - name: 🟢 Node.js kur
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: 📦 Bağımlılıkları kur
+        run: npm ci
+
+      - name: 🧪 Testleri çalıştır (derleme dahil)
+        run: npm test
+
+      - name: 🔎 Extension giriş dosyasını doğrula
+        run: |
+          set -euo pipefail
+          ENTRY=$(node -p "require('./package.json').main")
+          test -f "$ENTRY" || { echo "❌ $ENTRY bulunamadı!"; find out -maxdepth 2 -type f -print; exit 1; }
+          echo "✅ Extension entrypoint hazır: $ENTRY"
+
+  release:
+    name: Sürümle ve VSIX yayımla
+    needs: verify
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: 📥 Repo'yu klonla
         uses: actions/checkout@v4
@@ -28,16 +62,16 @@ jobs:
       - name: 📦 Bağımlılıkları kur
         run: npm ci
 
-      - name: 🔢 Main'de patch sürümünü otomatik artır
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      - name: 🔢 Patch sürümünü artır
         id: version
         run: |
+          set -euo pipefail
           CURRENT=$(node -p "require('./package.json').version")
-          echo "📌 Mevcut versiyon: $CURRENT"
+          echo "📌 Mevcut sürüm: $CURRENT"
 
           npm version patch --no-git-tag-version
           NEW_VERSION=$(node -p "require('./package.json').version")
-          echo "🚀 Yeni versiyon: $NEW_VERSION"
+          echo "🚀 Yeni sürüm: $NEW_VERSION"
           echo "version=$NEW_VERSION" >> "$GITHUB_OUTPUT"
 
           git config user.name "github-actions[bot]"
@@ -48,23 +82,11 @@ jobs:
           git tag "v$NEW_VERSION"
           git push origin "v$NEW_VERSION"
 
-      - name: 🔨 TypeScript derle
-        run: npm run compile
-
-      - name: 🔎 Extension giriş dosyasını doğrula
-        run: |
-          ENTRY=$(node -p "require('./package.json').main")
-          echo "📌 Extension entrypoint: $ENTRY"
-          if [ ! -f "$ENTRY" ]; then
-            echo "❌ $ENTRY bulunamadı!"
-            echo "Derlenen dosyalar:"
-            find out -maxdepth 2 -type f -print
-            exit 1
-          fi
-          echo "✅ Extension entrypoint hazır"
+      - name: 🧪 Sürüm sonrası doğrulama
+        run: npm test
 
       - name: 📦 VSIX paketini oluştur
-        run: npx @vscode/vsce package --allow-missing-repository
+        run: npm run vsix
 
       - name: 🧪 VSIX dosyasını doğrula
         run: |
@@ -84,18 +106,13 @@ jobs:
           fi
 
           unzip -l "$VSIX" > /tmp/vsix-list.txt
-          grep -q 'extension/package.json' /tmp/vsix-list.txt || {
-            echo "❌ VSIX içinde package.json yok!"
+          for path in extension/package.json extension/out/projectDoctorExtension.js extension/LICENSE; do
+            grep -q "$path" /tmp/vsix-list.txt || { echo "❌ VSIX içinde $path yok!"; exit 1; }
+          done
+          if grep -q 'extension/out/test/' /tmp/vsix-list.txt; then
+            echo "❌ Test dosyaları VSIX içinde bulunmamalı!"
             exit 1
-          }
-          grep -q 'extension/out/projectDoctorExtension.js' /tmp/vsix-list.txt || {
-            echo "❌ VSIX içinde extension entrypoint yok!"
-            exit 1
-          }
-          grep -q 'extension/LICENSE' /tmp/vsix-list.txt || {
-            echo "❌ VSIX içinde LICENSE yok!"
-            exit 1
-          }
+          fi
 
           unzip -p "$VSIX" extension/package.json > /tmp/vsix-package.json
           ACTUAL_VERSION=$(node -p "require('/tmp/vsix-package.json').version")
@@ -116,7 +133,6 @@ jobs:
           retention-days: 14
 
       - name: 🚀 GitHub Release oluştur
-        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.version }}

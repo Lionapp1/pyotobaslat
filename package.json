@@ -41,9 +41,24 @@
         "icon": "$(play)"
       },
       {
-        "command": "pyotobaslat.performansAnalizi",
-        "title": "PyOtoBaşlat: Görsel Performans Analizi",
-        "icon": "$(graph)"
+        "command": "pyotobaslat.koduDuzelt",
+        "title": "PyOtoBaşlat: Python Kodunu Güvenli Düzelt",
+        "icon": "$(wand)"
+      },
+      {
+        "command": "pyotobaslat.projeSaglikKontrolu",
+        "title": "PyOtoBaşlat: Project Doctor Raporu",
+        "icon": "$(pulse)"
+      },
+      {
+        "command": "pyotobaslat.ortamiSaglikRaporu",
+        "title": "PyOtoBaşlat: Proje Sağlık Raporu (Görsel)",
+        "icon": "$(dashboard)"
+      },
+      {
+        "command": "pyotobaslat.hataIstatistikleri",
+        "title": "PyOtoBaşlat: Hata İstatistikleri",
+        "icon": "$(pie-chart)"
       },
       {
         "command": "pyotobaslat.paketleriGuncelle",
@@ -56,11 +71,6 @@
         "icon": "$(shield)"
       },
       {
-        "command": "pyotobaslat.projeSaglikKontrolu",
-        "title": "PyOtoBaşlat: Proje Sağlık Kontrolü",
-        "icon": "$(pulse)"
-      },
-      {
         "command": "pyotobaslat.testleriCalistir",
         "title": "PyOtoBaşlat: Testleri Çalıştır",
         "icon": "$(beaker)"
@@ -71,9 +81,9 @@
         "icon": "$(sparkle)"
       },
       {
-        "command": "pyotobaslat.hataIstatistikleri",
-        "title": "PyOtoBaşlat: Project Doctor Raporu",
-        "icon": "$(pie-chart)"
+        "command": "pyotobaslat.performansAnalizi",
+        "title": "PyOtoBaşlat: Performans Analizi",
+        "icon": "$(graph)"
       },
       {
         "command": "pyotobaslat.ortamiTemizle",
@@ -84,11 +94,6 @@
         "command": "pyotobaslat.ayarlarAc",
         "title": "PyOtoBaşlat: Ayarları Aç",
         "icon": "$(gear)"
-      },
-      {
-        "command": "pyotobaslat.koduDuzelt",
-        "title": "PyOtoBaşlat: Python Kodunu Güvenli Düzelt",
-        "icon": "$(wand)"
       }
     ],
     "menus": {
@@ -118,27 +123,12 @@
     "keybindings": [
       {
         "command": "pyotobaslat.hazirlaVeCalistir",
-        "key": "f5",
-        "when": "editorLangId == python"
-      },
-      {
-        "command": "pyotobaslat.performansAnalizi",
-        "key": "ctrl+shift+f5",
-        "when": "editorLangId == python"
-      },
-      {
-        "command": "pyotobaslat.guvenlikTaramasi",
-        "key": "ctrl+shift+s",
+        "key": "ctrl+alt+r",
         "when": "editorLangId == python"
       },
       {
         "command": "pyotobaslat.projeSaglikKontrolu",
-        "key": "ctrl+shift+h",
-        "when": "editorLangId == python"
-      },
-      {
-        "command": "pyotobaslat.testleriCalistir",
-        "key": "ctrl+shift+t",
+        "key": "ctrl+alt+d",
         "when": "editorLangId == python"
       }
     ],
@@ -148,17 +138,27 @@
         "pyotobaslat.otomatikKurulum": {
           "type": "boolean",
           "default": true,
-          "description": "requirements.txt veya pyproject bağımlılıklarını .venv içinde otomatik kurar."
+          "description": "requirements.txt bağımlılıklarını sanal ortama kurar."
         },
         "pyotobaslat.venvOtomatikOlustur": {
           "type": "boolean",
           "default": true,
-          "description": ".venv yoksa oluşturur."
+          "description": ".venv yoksa oluşturur. Kapatılırsa kurulum yalnızca mevcut sanal ortamda yapılır; global Python kullanılmaz."
+        },
+        "pyotobaslat.gitignoreGuncelle": {
+          "type": "boolean",
+          "default": true,
+          "description": ".venv, __pycache__ ve .env gibi satırları eksikse .gitignore dosyasına ekler."
+        },
+        "pyotobaslat.pythonYorumlayiciyiSec": {
+          "type": "boolean",
+          "default": true,
+          "description": "VS Code Python yorumlayıcısını projenin sanal ortamına ayarlar."
         },
         "pyotobaslat.hataCevirmeniAktif": {
           "type": "boolean",
           "default": true,
-          "description": "Hataları Türkçeleştirir."
+          "description": "Hataları Türkçe açıklamalarla raporlar."
         },
         "pyotobaslat.calistirmaModu": {
           "type": "string",
@@ -167,6 +167,7 @@
             "django",
             "flask",
             "fastapi",
+            "streamlit",
             "script"
           ],
           "default": "otomatik",
@@ -175,17 +176,17 @@
         "pyotobaslat.otomatikPaketKontrol": {
           "type": "boolean",
           "default": true,
-          "description": "Gerçek .venv import durumunu kontrol eder ve güvenli eşleşmeleri kurar."
+          "description": "Gerçek .venv Python'u ile import doğrulaması yapar ve yalnızca bilinen eşleşmeleri kurar."
         },
         "pyotobaslat.envSihirbaziAktif": {
           "type": "boolean",
           "default": true,
-          "description": ".env şablonu oluşturur."
+          "description": "Eksikse .env şablonu oluşturmayı önerir."
         },
         "pyotobaslat.selfHealingAktif": {
           "type": "boolean",
           "default": true,
-          "description": "Ruff ile güvenli otomatik düzeltmeleri ve çalışma zamanı onarımını etkinleştirir."
+          "description": "Kurulum hatalarında güvenli onarımı ve Ruff ile güvenli düzeltmeyi etkinleştirir."
         },
         "pyotobaslat.hataIstatistikleriKaydet": {
           "type": "boolean",
@@ -195,7 +196,7 @@
         "pyotobaslat.ozelPipKaynagi": {
           "type": "string",
           "default": "",
-          "description": "Özel PyPI mirror URL'si."
+          "description": "Özel PyPI mirror URL'si (yalnızca http/https)."
         },
         "pyotobaslat.kodKalitesiAraci": {
           "type": "string",
@@ -222,6 +223,8 @@
   "scripts": {
     "compile": "tsc -p ./",
     "watch": "tsc -watch -p ./",
+    "test": "npm run compile && node --test 'out/test/**/*.test.js'",
+    "vsix": "npm run compile && node -e \"require('fs').rmSync('out/test', { recursive: true, force: true })\" && npx @vscode/vsce package --allow-missing-repository",
     "clean": "rm -rf out *.vsix"
   },
   "files": [

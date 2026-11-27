@@ -2,10 +2,7 @@
 
 > Türkçe, otomatik ve güvenli Python proje yardımcısı for VS Code.
 
-[![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/)
-[![Python](https://img.shields.io/badge/Python-3.7%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/)
-[![CI](https://github.com/Lionapp1/pyotobaslat/actions/workflows/ci.yml/badge.svg)](https://github.com/Lionapp1/pyotobaslat/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT-111827.svg)](LICENSE)
+[![VS Code](https://img.shields.io/badge/VS%20Code-1.85%2B-007ACC?logo=visualstudiocode&logoColor=white)](https://code.visualstudio.com/) [![Python](https://img.shields.io/badge/Python-3.7%2B-3776AB?logo=python&logoColor=white)](https://www.python.org/) [![CI](https://github.com/Lionapp1/pyotobaslat/actions/workflows/ci.yml/badge.svg)](https://github.com/Lionapp1/pyotobaslat/actions/workflows/ci.yml) [![License](https://img.shields.io/badge/license-MIT-111827.svg)](LICENSE)
 
 PyOtoBaşlat, Python projelerini VS Code içinde hazırlamak, çalıştırmak, teşhis etmek ve güvenli şekilde iyileştirmek için tasarlanmış bir yardımcıdır. `.venv` oluşturma, bağımlılık onarımı, Project Doctor, güvenlik taraması, test ve kod kalitesi kontrollerini tek akışta birleştirir.
 
@@ -13,64 +10,75 @@ PyOtoBaşlat, Python projelerini VS Code içinde hazırlamak, çalıştırmak, t
 
 | Özellik | Ne yapar? |
 | --- | --- |
-| **Projeyi Hazırla ve Çalıştır** | `.venv` oluşturur, pip araçlarını günceller, bağımlılıkları kurar, eksik importları onarır ve projeyi başlatır. |
-| **Project Doctor** | Python dosyalarını, framework'ü, ortamı, manifestleri, importları ve temel proje risklerini raporlar. |
-| **Eksik Paket Onarımı** | Gerçek `.venv` içinde import kontrolü yapar; güvenli import → PyPI eşleşmelerini otomatik kurar. |
-| **Python Kodunu Güvenli Düzelt** | Ruff ile güvenli otomatik düzeltmeleri uygular ve ardından `compileall` ile syntax kontrolü yapar. |
-| **Çalışma Zamanı Onarımı** | `ModuleNotFoundError` oluştuğunda güvenli eşleşme varsa `.venv` içine paketi kurup tekrar dener. |
+| **Projeyi Hazırla ve Çalıştır** | `.venv` oluşturur, pip araçlarını günceller, `requirements.txt` kurar, eksik importları doğrular, güvenli düzeltmeleri uygular ve projeyi başlatır. |
+| **Project Doctor** | Python dosyalarını, framework'ü, manifestleri, importları, ortam değişkenlerini ve temel proje risklerini Markdown raporu olarak açar. |
+| **Proje Sağlık Raporu** | Python sürümü, sanal ortam, paketler, güncellik, testler ve `.env` durumunu görsel panelde gösterir. |
+| **Eksik Paket Onarımı** | Gerçek `.venv` Python'u ile `importlib.util.find_spec` kontrolü yapar; yalnızca bilinen paket eşleşmelerini kurar. |
+| **Python Kodunu Güvenli Düzelt** | Ruff ile güvenli otomatik düzeltmeleri uygular, ardından `compileall` ile syntax kontrolü yapar. |
+| **Kurulum Hatası Onarımı** | Eksik modül veya derleme aracı hatalarında güvenli eşleşme varsa paketi kurar ya da pip araçlarını güncelleyip tekrar dener. |
 | **Güvenlik Taraması** | `pip-audit` ile bağımlılık güvenlik kontrolleri yapar. |
 | **Test Çalıştırıcı** | Projenin `.venv` Python'u üzerinden pytest veya unittest çalıştırır. |
-| **Kod Kalitesi** | Ruff, Flake8 veya Pylint ile kod kalitesini kontrol eder. |
-| **Performans Analizi** | cProfile ile performans verisi toplar. |
+| **Kod Kalitesi** | Ruff, Flake8 veya Pylint ile kod kalitesini kontrol eder (araca göre doğru komut kullanılır). |
+| **Performans Analizi** | cProfile verisini sıralanabilir görsel rapora dönüştürür. |
+| **Hata İstatistikleri** | Oluşan hataları yerel olarak kaydeder ve görsel panelde özetler. |
 | **Framework Algılama** | Django, Flask, FastAPI ve Streamlit projelerini algılar. |
 
 ## Güvenli otomatik düzeltme
 
-PyOtoBaşlat her Python dosyasını rastgele değiştirmez. Otomatik düzeltme yalnızca güvenli ve deterministik araçlarla yapılır:
+PyOtoBaşlat her Python dosyasını rastgele değiştirmez:
 
-1. Proje ve `.venv` hazırlanır.
-2. Import edilen bağımlılıklar gerçek Python yorumlayıcısıyla kontrol edilir.
-3. Bilinen paket eşleşmeleri `.venv` içine kurulur.
+1. Proje ve `.venv` hazırlanır; pip, setuptools ve wheel güncellenir.
+2. Importlar gerçek sanal ortam Python'u ile doğrulanır.
+3. Yalnızca açık eşleştirme listesindeki paketler kurulur.
 4. Ruff `--fix` ile güvenli düzeltmeler uygulanır.
 5. `python -m compileall` ile syntax tekrar doğrulanır.
-6. Çalıştırma sırasında eksik modül hatası oluşursa güvenli paket eşleşmesiyle onarım denenir.
+6. Bir kurulum hatası oluşursa güvenli eşleşme varsa onarım yapılıp işlem tekrarlanır.
 
-Proje içindeki yerel modüller PyPI'ya gönderilmez; yalnızca tanımlı güvenli paket eşleşmeleri otomatik kurulur.
+Proje içindeki yerel modüller PyPI'a gönderilmez. Tüm süreçler `execFile` ile, kabuk yorumlaması olmadan çalıştırılır.
 
 ## Kurulum
 
 1. VS Code'da **Extensions** panelini açın.
 2. **PyOtoBaşlat** aratın ve eklentiyi kurun.
 3. Bir Python proje klasörü açın.
-4. Python dosyanız açıkken `F5` ile hazırlama ve çalıştırmayı başlatın.
+4. Python dosyası açıkken **Ctrl+Alt+R** ile hazırlama ve çalıştırmayı başlatın.
 
 ### Komutlar
 
-- `PyOtoBaşlat: Projeyi Hazırla ve Çalıştır`
+Komut Paleti (`Ctrl+Shift+P`) üzerinden erişilebilir:
+
+- `PyOtoBaşlat: Projeyi Hazırla ve Çalıştır` — **Ctrl+Alt+R**
 - `PyOtoBaşlat: Python Kodunu Güvenli Düzelt`
-- `PyOtoBaşlat: Project Doctor Raporu`
+- `PyOtoBaşlat: Project Doctor Raporu` — **Ctrl+Alt+D**
+- `PyOtoBaşlat: Proje Sağlık Raporu (Görsel)`
 - `PyOtoBaşlat: Eksik Paketleri Kur`
 - `PyOtoBaşlat: Güvenlik Açığı Tara`
 - `PyOtoBaşlat: Testleri Çalıştır`
 - `PyOtoBaşlat: Kod Kalitesi Kontrolü`
+- `PyOtoBaşlat: Performans Analizi`
+- `PyOtoBaşlat: Hata İstatistikleri`
+- `PyOtoBaşlat: Ortamı Temizle`
+- `PyOtoBaşlat: Ayarları Aç`
 
-Komutlardaki görseller emoji değil, VS Code'un yerleşik **Codicon** ikonlarıdır. Bu sayede açık/koyu temalarda ve farklı platformlarda tutarlı görünürler.
+Komutlardaki görseller emoji değil, VS Code'un yerleşik **Codicon** ikonlarıdır. Kısayollar VS Code varsayılanlarıyla çakışmayacak şekilde seçilmiştir.
 
 ## Bağımlılık ve `.venv` davranışı
 
-PyOtoBaşlat mümkün olduğunda proje için oluşturduğu `.venv` Python yorumlayıcısını kullanır. `requirements.txt` varsa onu kurar; ardından kaynak kodundaki bilinen üçüncü taraf importlarını gerçek ortamda kontrol eder. Eksik paketler yalnızca bu `.venv` içine kurulur.
+PyOtoBaşlat kurulum, test, kalite ve güvenlik araçlarını **yalnızca projenin sanal ortamında** çalıştırır. `.venv` yoksa oluşturur; `venvOtomatikOlustur` ayarı kapatılmışsa mevcut sanal ortam zorunludur ve global Python'a paket kurulmaz.
 
-PyOtoBaşlat global Python ortamını gereksiz yere kirletmemeye çalışır.
+`requirements.txt` varsa kurulur; ardından kaynak koddaki bilinen üçüncü taraf importları gerçek ortamda kontrol edilir. Eksik paketler yalnızca bu `.venv` içine kurulur ve isteğe bağlı olarak `requirements.txt`'e eklenir.
 
-## Sürüm ve VSIX
+`.gitignore` ve VS Code Python yorumlayıcısı ayarları, ilgili ayarlar açıksa güncellenir; her iki davranış da **PyOtoBaşlat Ayarları** üzerinden kapatılabilir.
 
-Sürümleme `main` build'inde otomatik patch artırımıyla yapılır. `package.json` ve `package-lock.json` birlikte güncellenir. Ardından aynı sürümle VSIX paketlenir ve doğrulanır.
+## Geliştirme
 
-Örnek:
+```bash
+npm ci
+npm test        # TypeScript derleme + birim testler
+npm run vsix    # Testleri paket dışında bırakıp VSIX oluşturur
+```
 
-`2.1.7` → `2.1.8` → `pyotobaslat-2.1.8.vsix` → `v2.1.8` Release
-
-PR build'leri doğrulama içindir; sürüm artırmaz.
+CI, PR'larda derleme ve testleri çalıştırır; `main` üzerine gönderimde testler geçtikten sonra patch sürümü artırılır, VSIX paketlenir, doğrulanır ve aynı sürümle Release oluşturulur.
 
 ## Gereksinimler
 
